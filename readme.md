@@ -1,4 +1,4 @@
-# Sbt pluing for ScalikeJDBC users
+# ScalikeJDBC Mapper Generator
 
 ## How to use
 
@@ -17,7 +17,6 @@ addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "0.1.0")
 
 ```
 import scalikejdbc.mapper.SbtKeys._
-
 
 seq(scalikejdbcSettings: _*)
 
