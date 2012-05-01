@@ -81,11 +81,11 @@ case class Member(
 object Member {
 
   val * = (rs: WrappedResultSet) => Member(
-    rs.long("ID"),
-    rs.string("NAME"),
-    Option(rs.string("DESCRIPTION")),
-    Option(rs.date("BIRTHDAY").toJavaUtilDate),
-    rs.timestamp("CREATED_AT").toJavaUtilDate)
+    rs.long("MEMBER.ID"),
+    rs.string("MEMBER.NAME"),
+    Option(rs.string("MEMBER.DESCRIPTION")),
+    Option(rs.date("MEMBER.BIRTHDAY")).map(_.toJavaUtilDate),
+    rs.timestamp("MEMBER.CREATED_AT").toJavaUtilDate)
 
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>
