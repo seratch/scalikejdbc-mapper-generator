@@ -1,3 +1,5 @@
+import testgen.TestgenKeys._
+
 sbtPlugin := true
 
 crossScalaVersions := Seq("2.9.2", "2.9.1", "2.9.0")
@@ -9,8 +11,8 @@ resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/release
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 libraryDependencies ++= Seq(
-  "com.github.seratch" %% "scalikejdbc" % "[0.6,)",
-  "org.apache.ddlutils" % "ddlutils" % "1.0",
+  "com.github.seratch" %% "scalikejdbc" % "0.6.7",
+  "ch.qos.logback" % "logback-classic" % "1.0.2",
   "org.hsqldb" % "hsqldb" % "[2,)" % "test",
   "org.scalatest" %% "scalatest" % "[1.7,)" % "test"
 )
@@ -18,6 +20,21 @@ libraryDependencies ++= Seq(
 seq(lsSettings :_*)
 
 seq(scalariformSettings: _*)
+
+// testgen
+
+seq(testgenSettings: _*)
+
+testgenEncoding in Compile := "UTF-8"
+
+testgenTestTemplate in Compile := "scalatest.FlatSpec"
+
+testgenScalaTestMatchers in Compile := "ShouldMatchers"
+
+testgenWithJUnitRunner in Compile := false
+
+testgenLineBreak in Compile := "LF"
+
 
 // publish
 

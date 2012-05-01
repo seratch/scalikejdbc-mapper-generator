@@ -23,6 +23,7 @@ object SbtKeys {
   lazy val scalikejdbcUrl = SettingKey[String]("scalikejdbc-url")
   lazy val scalikejdbcUsername = SettingKey[String]("scalikejdbc-username")
   lazy val scalikejdbcPassword = SettingKey[String]("scalikejdbc-password")
+  lazy val scalikejdbcSchema = SettingKey[String]("scalikejdbc-schema")
   lazy val scalikejdbcPackageName = SettingKey[String]("scalikejdbc-package-name")
   lazy val scalikejdbcLineBreak = SettingKey[String]("scalikejdbc-line-break")
 }

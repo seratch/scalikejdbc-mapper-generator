@@ -29,7 +29,7 @@ seq(scalikejdbcSettings: _*)
 
 scalikejdbcDriver in Compile := "org.hsqldb.jdbc.JDBCDriver"
 
-scalikejdbcUrl in Compile := "jdbc:hsqldb:file:/Users/seratch/Documents/github/scalikejdbc-mapper-generator/test/testing-scalikejdbc-sbt/db/test"
+scalikejdbcUrl in Compile := "jdbc:hsqldb:file:db/test"
 
 scalikejdbcUsername in Compile := "sa"
 

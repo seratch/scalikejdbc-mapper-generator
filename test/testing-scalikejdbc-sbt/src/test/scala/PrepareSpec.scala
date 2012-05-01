@@ -1,6 +1,7 @@
 import org.scalatest._
 import org.scalatest.matchers._
 
+import com.example.models.Member
 import scalikejdbc._
 
 class PrepareSpec extends FlatSpec with ShouldMatchers {
@@ -31,6 +32,8 @@ class PrepareSpec extends FlatSpec with ShouldMatchers {
     DB readOnly { implicit session =>
       SQL("select * from member").map(rs => rs.long("id")).list.apply().foreach { id => println(id) }
     }
+    Member.countAll() should equal(1L)
+    Member.findBy("id = ?", 2).size should equal(0)
     Thread.sleep(1000)
   }
 

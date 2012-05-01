@@ -15,5 +15,8 @@
  */
 package scalikejdbc.mapper
 
-case class Table(name: String, primaryKeys: List[Column], autoIncrementColumns: List[Column], columns: List[Column])
+case class Table(name: String,
+  allColumns: List[Column],
+  autoIncrementColumns: List[Column],
+  primaryKeyColumns: List[Column])
 

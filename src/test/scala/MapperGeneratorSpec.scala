@@ -33,7 +33,7 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
       }
     }
 
-    Model(url, username, password).table("member").map {
+    Model(url, username, password).table(null, "MEMBER").map {
       table =>
         val generator = ARLikeTemplateGenerator(table)(GeneratorConfig(
           srcDir = "src/test/scala",
@@ -91,7 +91,7 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
       }
     }
 
-    Model(url, username, password).table("un_normalized").map {
+    Model(url, username, password).table(null, "UN_NORMALIZED").map {
       table =>
         val generator = ARLikeTemplateGenerator(table)(GeneratorConfig(
           srcDir = "src/test/scala",

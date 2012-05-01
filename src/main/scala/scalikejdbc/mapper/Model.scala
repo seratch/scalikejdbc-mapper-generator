@@ -16,31 +16,45 @@ package scalikejdbc.mapper
  * governing permissions and limitations under the License.
  */
 
-import org.apache.ddlutils._
-import org.apache.commons.dbcp.BasicDataSource
+import scalikejdbc._
+import scalikejdbc.{ ResultSetTraversable => RSTraversable }
 
 case class Model(url: String, username: String, password: String) {
 
-  private val ds = new BasicDataSource()
-  ds.setUrl(url)
-  ds.setUsername(username)
-  ds.setPassword(password)
+  ConnectionPool.singleton(url, username, password)
 
-  private val platform = PlatformFactory.createNewPlatformInstance(ds)
-  private val database = platform.readModelFromDatabase(null)
+  private def columnName(implicit rs: WrappedResultSet): String = rs.string("COLUMN_NAME")
 
-  lazy val tables: List[Table] = database.getTables.map {
-    table =>
-      Table(
-        table.getName,
-        table.getPrimaryKeyColumns.map(c => Column(c.getName, c.getType, c.isRequired)).toList,
-        table.getAutoIncrementColumns.map(c => Column(c.getName, c.getType, c.isRequired)).toList,
-        table.getColumns.map(c => Column(c.getName, c.getType, c.isRequired)).toList
-      )
-  }.toList
+  private def columnDataType(implicit rs: WrappedResultSet): Int = rs.int("DATA_TYPE")
 
-  def table(name: String): Option[Table] = {
-    tables.find(table => table.name.matches(name.toUpperCase))
+  private def isNotNull(implicit rs: WrappedResultSet): Boolean = rs.string("IS_NULLABLE") == "NO"
+
+  private def isAutoIncrement(implicit rs: WrappedResultSet): Boolean = try {
+    rs.string("IS_AUTOINCREMENT") == "YES"
+  } catch { case e => false }
+
+  def table(schema: String = null, tableName: String): Option[Table] = {
+    val catalog = null
+    val _schema = if (schema == null || schema.size == 0) null else schema
+    DB readOnlyWithConnection { conn =>
+      val meta = conn.getMetaData
+      new RSTraversable(meta.getColumns(catalog, _schema, tableName, "%"))
+        .map { implicit rs => Column(columnName, columnDataType, isNotNull, isAutoIncrement) }.toList.distinct match {
+          case Nil => None
+          case allColumns =>
+            Some(Table(
+              name = tableName,
+              allColumns = allColumns,
+              autoIncrementColumns = allColumns.filter(c => c.isAutoIncrement).distinct,
+              primaryKeyColumns = {
+                new RSTraversable(meta.getPrimaryKeys(catalog, _schema, tableName))
+                  .flatMap { implicit rs =>
+                    allColumns.find(column => column.name == columnName)
+                  }.toList.distinct
+              }
+            ))
+        }
+    }
   }
 
 }

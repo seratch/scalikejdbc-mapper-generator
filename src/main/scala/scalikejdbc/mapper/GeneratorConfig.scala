@@ -16,7 +16,6 @@
 package scalikejdbc.mapper
 
 case class GeneratorConfig(srcDir: String = "src/main/scala",
-  srcTestDir: String = "src/test/scala",
   packageName: String = "models",
   lineBreak: String = "\n",
   encoding: String = "UTF-8")

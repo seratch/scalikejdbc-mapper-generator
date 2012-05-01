@@ -24,26 +24,28 @@ object SbtPlugin extends Plugin {
 
   val genTask = inputTask {
     (task: TaskKey[Seq[String]]) =>
-      (task, scalaSource in Compile, scalaSource in Test,
-        scalikejdbcDriver, scalikejdbcUrl, scalikejdbcUsername, scalikejdbcPassword,
+      (task, scalaSource in Compile,
+        scalikejdbcDriver, scalikejdbcUrl, scalikejdbcUsername, scalikejdbcPassword, scalikejdbcSchema,
         scalikejdbcPackageName, scalikejdbcLineBreak) map {
-          case (args, srcDir, srcTestDir, driver, url, username, password, packageName, lineBreak) =>
+          case (args, srcDir, driver, url, username, password, schema, packageName, lineBreak) =>
             args match {
               case Nil => println("Usage: scalikejdbc-gen [table-name]")
               case _ =>
                 Class.forName(driver) // load specified jdbc driver
-                val tableName = args.head.toUpperCase
-                Model(url, username, password).table(tableName).map {
-                  table =>
+                val tableName = args.head
+                val model = Model(url, username, password)
+                model.table(schema, tableName)
+                  .orElse(model.table(schema, tableName.toUpperCase))
+                  .orElse(model.table(schema, tableName.toLowerCase))
+                  .map { table =>
                     ARLikeTemplateGenerator(table)(GeneratorConfig(
                       srcDir = srcDir.getAbsolutePath,
-                      srcTestDir = srcTestDir.getAbsolutePath,
                       packageName = packageName,
                       lineBreak = lineBreak
                     )).writeFileIfNotExist()
-                } getOrElse {
-                  println("The table is not found.")
-                }
+                  } getOrElse {
+                    println("The table is not found.")
+                  }
             }
         }
   }
@@ -54,6 +56,7 @@ object SbtPlugin extends Plugin {
     scalikejdbcUrl := "",
     scalikejdbcUsername := "",
     scalikejdbcPassword := "",
+    scalikejdbcSchema := "",
     scalikejdbcPackageName := "",
     scalikejdbcLineBreak := "\n"
   ))
