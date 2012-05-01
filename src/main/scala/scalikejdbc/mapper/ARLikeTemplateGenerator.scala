@@ -82,13 +82,14 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val pkColumns = table.primaryKeyColumns
 
     val mapper = {
+      val prefix = table.name + "."
       allColumns match {
         case allColumns if allColumns.size <= 22 =>
           "  val * = (rs: WrappedResultSet) => " + className(table) + "(" + lineBreak +
             allColumns.map {
               c =>
-                if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c)
-                else "    Option(rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c) + ")"
+                if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
+                else "    Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
             }.mkString("," + lineBreak) + ")" + lineBreak
         case _ =>
           "  val * = (rs: WrappedResultSet) => {" + lineBreak +
@@ -96,8 +97,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
             allColumns.map {
               c =>
                 "    m." + columnName(c) + " = " +
-                  (if (c.isNotNull) "rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c)
-                  else "Option(rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c) + ")")
+                  (if (c.isNotNull) "rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
+                  else "Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")")
             }.mkString(lineBreak) + lineBreak +
             "    m" + lineBreak +
             "  }" + lineBreak
@@ -422,10 +423,13 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     else "None"
   }
 
-  private def cast(column: Column): String = column.dataType match {
+  private def cast(column: Column, optional: Boolean): String = column.dataType match {
+    case JavaSqlTypes.DATE if optional => ").map(_.toJavaUtilDate"
     case JavaSqlTypes.DATE => ".toJavaUtilDate"
     case JavaSqlTypes.STRUCT => ".asInstanceOf[Struct]"
+    case JavaSqlTypes.TIME if optional => ").map(_.toJavaUtilDate"
     case JavaSqlTypes.TIME => ".toJavaUtilDate"
+    case JavaSqlTypes.TIMESTAMP if optional => ").map(_.toJavaUtilDate"
     case JavaSqlTypes.TIMESTAMP => ".toJavaUtilDate"
     case _ => ""
   }

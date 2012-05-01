@@ -21,15 +21,15 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
         case e =>
           e.printStackTrace()
           SQL("""
-          create table member (
-            id bigint generated always as identity,
-            name varchar(30) not null,
-            description varchar(1000),
-            birthday date,
-            created_at timestamp not null,
-            primary key(id)
-          )
-          """).execute.apply()
+            create table member (
+              id bigint generated always as identity,
+              name varchar(30) not null,
+              description varchar(1000),
+              birthday date,
+              created_at timestamp not null,
+              primary key(id)
+            )
+            """).execute.apply()
       }
     }
 
@@ -44,7 +44,9 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
     } getOrElse {
       fail("The table is not found.")
     }
-
+    import com.example._
+    Member.create("Alice", Some("Example"), None, new java.util.Date)
+    Member.findAll() foreach println
     Thread.sleep(1000)
   }
 

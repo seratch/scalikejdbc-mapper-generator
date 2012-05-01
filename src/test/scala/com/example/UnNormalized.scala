@@ -2,7 +2,7 @@ package com.example
 
 import scalikejdbc._
 import java.util.Date
-import java.sql.{Clob, Blob}
+import java.sql.{ Clob, Blob }
 
 class UnNormalized {
 
@@ -43,32 +43,32 @@ object UnNormalized {
 
   val * = (rs: WrappedResultSet) => {
     val m = new UnNormalized
-    m.createdAt = rs.timestamp("CREATED_AT").toJavaUtilDate
-    m.id = rs.long("ID")
-    m.v01 = rs.byte("V_01")
-    m.v02 = rs.short("V_02")
-    m.v03 = rs.int("V_03")
-    m.v04 = rs.long("V_04")
-    m.v05 = rs.bigDecimal("V_05")
-    m.v06 = rs.bigDecimal("V_06")
-    m.v07 = rs.double("V_07")
-    m.v08 = rs.boolean("V_08")
-    m.v09 = rs.string("V_09")
-    m.v10 = rs.string("V_10")
-    m.v11 = rs.clob("V_11")
-    m.v12 = rs.string("V_12")
-    m.v13 = rs.bytes("V_13")
-    m.v14 = rs.bytes("V_14")
-    m.v15 = rs.blob("V_15")
-    m.v16 = rs.boolean("V_16")
-    m.v17 = rs.date("V_17").toJavaUtilDate
-    m.v18 = rs.time("V_18").toJavaUtilDate
-    m.v19 = rs.time("V_19").toJavaUtilDate
-    m.v20 = rs.timestamp("V_20").toJavaUtilDate
-    m.v21 = rs.any("V_21")
-    m.v22 = rs.boolean("V_22")
-    m.v23 = rs.double("V_23")
-    m.v24 = rs.double("V_24")
+    m.createdAt = rs.timestamp("UN_NORMALIZED.CREATED_AT").toJavaUtilDate
+    m.id = rs.long("UN_NORMALIZED.ID")
+    m.v01 = rs.byte("UN_NORMALIZED.V_01")
+    m.v02 = rs.short("UN_NORMALIZED.V_02")
+    m.v03 = rs.int("UN_NORMALIZED.V_03")
+    m.v04 = rs.long("UN_NORMALIZED.V_04")
+    m.v05 = rs.bigDecimal("UN_NORMALIZED.V_05")
+    m.v06 = rs.bigDecimal("UN_NORMALIZED.V_06")
+    m.v07 = rs.double("UN_NORMALIZED.V_07")
+    m.v08 = rs.boolean("UN_NORMALIZED.V_08")
+    m.v09 = rs.string("UN_NORMALIZED.V_09")
+    m.v10 = rs.string("UN_NORMALIZED.V_10")
+    m.v11 = rs.clob("UN_NORMALIZED.V_11")
+    m.v12 = rs.string("UN_NORMALIZED.V_12")
+    m.v13 = rs.bytes("UN_NORMALIZED.V_13")
+    m.v14 = rs.bytes("UN_NORMALIZED.V_14")
+    m.v15 = rs.blob("UN_NORMALIZED.V_15")
+    m.v16 = rs.boolean("UN_NORMALIZED.V_16")
+    m.v17 = rs.date("UN_NORMALIZED.V_17").toJavaUtilDate
+    m.v18 = rs.time("UN_NORMALIZED.V_18").toJavaUtilDate
+    m.v19 = rs.time("UN_NORMALIZED.V_19").toJavaUtilDate
+    m.v20 = rs.timestamp("UN_NORMALIZED.V_20").toJavaUtilDate
+    m.v21 = rs.any("UN_NORMALIZED.V_21")
+    m.v22 = rs.boolean("UN_NORMALIZED.V_22")
+    m.v23 = rs.double("UN_NORMALIZED.V_23")
+    m.v24 = rs.double("UN_NORMALIZED.V_24")
     m
   }
 
@@ -95,14 +95,14 @@ object UnNormalized {
   def findBy(where: String, params: Any*): List[UnNormalized] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM UN_NORMALIZED WHERE """ + where)
-        .bind(params:_*).map(*).list.apply()
+        .bind(params: _*).map(*).list.apply()
     }
   }
 
   def countBy(where: String, params: Any*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM UN_NORMALIZED WHERE """ + where)
-        .bind(params:_*).map(rs => rs.long(1)).single.apply().get
+        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -215,32 +215,32 @@ object UnNormalized {
           v24
         ).updateAndReturnGeneratedKey.apply()
       val m = new UnNormalized
-        m.id = generatedKey
-        m.createdAt = createdAt
-        m.v01 = v01
-        m.v02 = v02
-        m.v03 = v03
-        m.v04 = v04
-        m.v05 = v05
-        m.v06 = v06
-        m.v07 = v07
-        m.v08 = v08
-        m.v09 = v09
-        m.v10 = v10
-        m.v11 = v11
-        m.v12 = v12
-        m.v13 = v13
-        m.v14 = v14
-        m.v15 = v15
-        m.v16 = v16
-        m.v17 = v17
-        m.v18 = v18
-        m.v19 = v19
-        m.v20 = v20
-        m.v21 = v21
-        m.v22 = v22
-        m.v23 = v23
-        m.v24 = v24
+      m.id = generatedKey
+      m.createdAt = createdAt
+      m.v01 = v01
+      m.v02 = v02
+      m.v03 = v03
+      m.v04 = v04
+      m.v05 = v05
+      m.v06 = v06
+      m.v07 = v07
+      m.v08 = v08
+      m.v09 = v09
+      m.v10 = v10
+      m.v11 = v11
+      m.v12 = v12
+      m.v13 = v13
+      m.v14 = v14
+      m.v15 = v15
+      m.v16 = v16
+      m.v17 = v17
+      m.v18 = v18
+      m.v19 = v19
+      m.v20 = v20
+      m.v21 = v21
+      m.v22 = v22
+      m.v23 = v23
+      m.v24 = v24
       m
     }
   }
@@ -278,35 +278,35 @@ object UnNormalized {
         WHERE 
           ID = ?
       """)
-      .bind(
-        m.createdAt,
-        m.id,
-        m.v01,
-        m.v02,
-        m.v03,
-        m.v04,
-        m.v05,
-        m.v06,
-        m.v07,
-        m.v08,
-        m.v09,
-        m.v10,
-        m.v11,
-        m.v12,
-        m.v13,
-        m.v14,
-        m.v15,
-        m.v16,
-        m.v17,
-        m.v18,
-        m.v19,
-        m.v20,
-        m.v21,
-        m.v22,
-        m.v23,
-        m.v24, 
-        m.id
-      ).update.apply()
+        .bind(
+          m.createdAt,
+          m.id,
+          m.v01,
+          m.v02,
+          m.v03,
+          m.v04,
+          m.v05,
+          m.v06,
+          m.v07,
+          m.v08,
+          m.v09,
+          m.v10,
+          m.v11,
+          m.v12,
+          m.v13,
+          m.v14,
+          m.v15,
+          m.v16,
+          m.v17,
+          m.v18,
+          m.v19,
+          m.v20,
+          m.v21,
+          m.v22,
+          m.v23,
+          m.v24,
+          m.id
+        ).update.apply()
     }
   }
 

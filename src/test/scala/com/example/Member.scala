@@ -4,11 +4,11 @@ import scalikejdbc._
 import java.util.Date
 
 case class Member(
-  id: Long, 
-  name: String, 
-  description: Option[String], 
-  birthday: Option[Date], 
-  createdAt: Date) { 
+    id: Long,
+    name: String,
+    description: Option[String],
+    birthday: Option[Date],
+    createdAt: Date) {
 
   def save(): Unit = Member.save(this)
 
@@ -19,11 +19,11 @@ case class Member(
 object Member {
 
   val * = (rs: WrappedResultSet) => Member(
-    rs.long("ID"),
-    rs.string("NAME"),
-    Option(rs.string("DESCRIPTION")),
-    Option(rs.date("BIRTHDAY").toJavaUtilDate),
-    rs.timestamp("CREATED_AT").toJavaUtilDate)
+    rs.long("MEMBER.ID"),
+    rs.string("MEMBER.NAME"),
+    Option(rs.string("MEMBER.DESCRIPTION")),
+    Option(rs.date("MEMBER.BIRTHDAY")).map(_.toJavaUtilDate),
+    rs.timestamp("MEMBER.CREATED_AT").toJavaUtilDate)
 
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>
@@ -48,14 +48,14 @@ object Member {
   def findBy(where: String, params: Any*): List[Member] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM MEMBER WHERE """ + where)
-        .bind(params:_*).map(*).list.apply()
+        .bind(params: _*).map(*).list.apply()
     }
   }
 
   def countBy(where: String, params: Any*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM MEMBER WHERE """ + where)
-        .bind(params:_*).map(rs => rs.long(1)).single.apply().get
+        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -84,7 +84,7 @@ object Member {
           createdAt
         ).updateAndReturnGeneratedKey.apply()
       Member(
-        id = generatedKey, 
+        id = generatedKey,
         name = name,
         description = description,
         birthday = birthday,
@@ -105,14 +105,14 @@ object Member {
         WHERE 
           ID = ?
       """)
-      .bind(
-        m.id,
-        m.name,
-        m.description,
-        m.birthday,
-        m.createdAt, 
-        m.id
-      ).update.apply()
+        .bind(
+          m.id,
+          m.name,
+          m.description,
+          m.birthday,
+          m.createdAt,
+          m.id
+        ).update.apply()
     }
   }
 
