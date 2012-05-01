@@ -63,10 +63,16 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         lineBreak +
         "}"
     } else {
-      "class " + className(table) + "{" +
+      "class " + className(table) + "{" + lineBreak +
+        lineBreak +
         table.columns.map {
-          c => "val " + columnName(c) + ": " + columnType(c)
-        }.mkString(lineBreak) +
+          c => "  var " + columnName(c) + ": " + columnType(c) + " = " + defaultValue(c)
+        }.mkString(lineBreak) + lineBreak +
+        lineBreak +
+        "  def save(): Unit = " + className(table) + ".save(this)" + lineBreak +
+        lineBreak +
+        "  def destroy(): Unit = " + className(table) + ".delete(this)" + lineBreak +
+        lineBreak +
         "}"
     }
   }
@@ -75,18 +81,34 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val allColumns = table.columns
     val pkColumns = table.primaryKeys
 
-    val mapper =
-      "  val * = (rs: WrappedResultSet) => " + className(table) + "(" + lineBreak +
-        allColumns.map {
-          c =>
-            if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c)
-            else "    Option(rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c) + ")"
-        }.mkString("," + lineBreak) + lineBreak +
-        "  )" + lineBreak
+    val mapper = {
+      allColumns match {
+        case columns if columns.size <= 22 =>
+          "  val * = (rs: WrappedResultSet) => " + className(table) + "(" + lineBreak +
+            allColumns.map {
+              c =>
+                if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c)
+                else "    Option(rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c) + ")"
+            }.mkString("," + lineBreak) + lineBreak +
+            "  )" + lineBreak
+        case _ =>
+          "  val * = (rs: WrappedResultSet) => {" + lineBreak +
+            "    val m = new " + className(table) + lineBreak +
+            allColumns.map {
+              c =>
+                "    m." + columnName(c) + " = " +
+                  (if (c.isNotNull) "rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c)
+                  else "Option(rs." + extractorName(c) + "(\"" + c.name + "\")" + cast(c) + ")")
+            }.mkString(lineBreak) + lineBreak +
+            "    m" + lineBreak +
+            "  }" + lineBreak
+      }
+    }
 
     val createColumns = allColumns.filterNot {
       c => table.autoIncrementColumns.find(aic => aic.name == c.name).isDefined
     }
+
     val createMethod =
       "  def create(" + createColumns.map(c => columnName(c) + ": " + columnType(c)).mkString(", ") + "): " + className(table) + " = {" + lineBreak +
         "    DB localTx { implicit session =>" + lineBreak +
@@ -97,19 +119,32 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               "      new " + className(table) + "(" + lineBreak +
               createColumns.map {
                 c => "        " + columnName(c) + " = " + columnName(c)
-              }.mkString(", " + lineBreak) + lineBreak
+              }.mkString(", " + lineBreak) + lineBreak +
+              "      )" + lineBreak
           case _ =>
             "      val generatedKey = SQL(\"INSERT INTO " + table.name + " (" + createColumns.map(_.name).mkString(", ") + ") VALUES (" + (1 to createColumns.size).map(_ => "?").mkString(", ") + ")\")" + lineBreak +
               "        .bind(" + createColumns.map(c => columnName(c)).mkString(", ") + ").updateAndReturnGeneratedKey.apply()" + lineBreak +
-              "      new " + className(table) + "(" + lineBreak +
-              table.autoIncrementColumns.map {
-                c => "        " + columnName(c) + " = generatedKey, "
-              }.mkString(lineBreak) + lineBreak +
-              createColumns.map {
-                c => "        " + columnName(c) + " = " + columnName(c)
-              }.mkString(", " + lineBreak) + lineBreak
+              (allColumns match {
+                case columns if columns.size <= 22 =>
+                  "      " + className(table) + "(" + lineBreak +
+                    table.autoIncrementColumns.map {
+                      c => "        " + columnName(c) + " = generatedKey, "
+                    }.mkString(lineBreak) + lineBreak +
+                    createColumns.map {
+                      c => "        " + columnName(c) + " = " + columnName(c)
+                    }.mkString(", " + lineBreak) + lineBreak +
+                    "      )" + lineBreak
+                case columns =>
+                  "      val m = new " + className(table) + lineBreak +
+                    table.autoIncrementColumns.map {
+                      c => "      m." + columnName(c) + " = generatedKey"
+                    }.mkString(lineBreak) + lineBreak +
+                    createColumns.map {
+                      c => "      m." + columnName(c) + " = " + columnName(c)
+                    }.mkString(lineBreak) + lineBreak +
+                    "      m" + lineBreak
+              })
         }) +
-        "      )" + lineBreak +
         "    }" + lineBreak +
         "  }" + lineBreak
 
@@ -299,9 +334,47 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     case _ => "any"
   }
 
+  private def defaultValue(column: Column): String = {
+    val rawType = column.typeName match {
+      case "ARRAY" => "null"
+      case "BIGINT" => "0L"
+      case "BINARY" => "null"
+      case "BIT" => "false"
+      case "BLOB" => "null"
+      case "BOOLEAN" => "false"
+      case "CHAR" => "null"
+      case "CLOB" => "null"
+      case "DATALINK" => "null"
+      case "DATE" => "null"
+      case "DECIMAL" => "null"
+      case "DISTINCT" => "null"
+      case "DOUBLE" => "0.0D"
+      case "FLOAT" => "0.0F"
+      case "INTEGER" => "0"
+      case "JAVA_OBJECT" => "null"
+      case "LONGVARBINARY" => "null"
+      case "LONGVARCHAR" => "null"
+      case "NULL" => "null"
+      case "NUMERIC" => "null"
+      case "OTHER" => "null"
+      case "REAL" => "0.0F"
+      case "REF" => "null"
+      case "SMALLINT" => "0"
+      case "STRUCT" => "null"
+      case "TIME" => "null"
+      case "TIMESTAMP" => "null"
+      case "TINYINT" => "0"
+      case "VARBINARY" => "null"
+      case "VARCHAR" => "null"
+      case _ => "null"
+    }
+    if (column.isNotNull) rawType
+    else "None"
+  }
+
   private def cast(column: Column): String = column.typeName match {
     case "DATE" => ".toJavaUtilDate"
-    case "STRUCT" => "asInstanceOf[Struct]"
+    case "STRUCT" => ".asInstanceOf[Struct]"
     case "TIME" => ".toJavaUtilDate"
     case "TIMESTAMP" => ".toJavaUtilDate"
     case _ => ""

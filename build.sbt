@@ -10,7 +10,9 @@ externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 libraryDependencies ++= Seq(
   "com.github.seratch" %% "scalikejdbc" % "[0.6,)",
-  "org.apache.ddlutils" % "ddlutils" % "1.0"
+  "org.apache.ddlutils" % "ddlutils" % "1.0",
+  "org.hsqldb" % "hsqldb" % "[2,)" % "test",
+  "org.scalatest" %% "scalatest" % "[1.7,)" % "test"
 )
 
 seq(lsSettings :_*)
