@@ -4,11 +4,11 @@ import scalikejdbc._
 import java.util.Date
 
 case class Member(
-    id: Long = 0L,
-    name: String = null,
+    id: Long,
+    name: String,
     description: Option[String] = None,
     birthday: Option[Date] = None,
-    createdAt: Date = null) {
+    createdAt: Date) {
 
   def save(): Unit = Member.save(this)
 
@@ -61,8 +61,8 @@ object Member {
 
   def create(
     name: String,
-    description: Option[String],
-    birthday: Option[Date],
+    description: Option[String] = None,
+    birthday: Option[Date] = None,
     createdAt: Date): Member = {
     DB localTx { implicit session =>
       val generatedKey = SQL("""

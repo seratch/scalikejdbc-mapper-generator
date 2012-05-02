@@ -135,44 +135,6 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       case _ => "any"
     }
 
-    lazy val defaultValue: String = {
-      val rawType = underlying.dataType match {
-        case JavaSqlTypes.ARRAY => "null"
-        case JavaSqlTypes.BIGINT => "0L"
-        case JavaSqlTypes.BINARY => "null"
-        case JavaSqlTypes.BIT => "false"
-        case JavaSqlTypes.BLOB => "null"
-        case JavaSqlTypes.BOOLEAN => "false"
-        case JavaSqlTypes.CHAR => "null"
-        case JavaSqlTypes.CLOB => "null"
-        case JavaSqlTypes.DATALINK => "null"
-        case JavaSqlTypes.DATE => "null"
-        case JavaSqlTypes.DECIMAL => "null"
-        case JavaSqlTypes.DISTINCT => "null"
-        case JavaSqlTypes.DOUBLE => "0.0D"
-        case JavaSqlTypes.FLOAT => "0.0F"
-        case JavaSqlTypes.INTEGER => "0"
-        case JavaSqlTypes.JAVA_OBJECT => "null"
-        case JavaSqlTypes.LONGVARBINARY => "null"
-        case JavaSqlTypes.LONGVARCHAR => "null"
-        case JavaSqlTypes.NULL => "null"
-        case JavaSqlTypes.NUMERIC => "null"
-        case JavaSqlTypes.OTHER => "null"
-        case JavaSqlTypes.REAL => "0.0F"
-        case JavaSqlTypes.REF => "null"
-        case JavaSqlTypes.SMALLINT => "0"
-        case JavaSqlTypes.STRUCT => "null"
-        case JavaSqlTypes.TIME => "null"
-        case JavaSqlTypes.TIMESTAMP => "null"
-        case JavaSqlTypes.TINYINT => "0"
-        case JavaSqlTypes.VARBINARY => "null"
-        case JavaSqlTypes.VARCHAR => "null"
-        case _ => "null"
-      }
-      if (underlying.isNotNull) rawType
-      else "None"
-    }
-
   }
   implicit def convertColumnToColumnInScala(column: Column): ColumnInScala = ColumnInScala(column)
 
@@ -202,7 +164,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     if (table.allColumns.size <= 22) {
       "case class " + className + "(" + eol +
         table.allColumns.map {
-          c => 1.indent + c.nameInScala + ": " + c.typeInScala + " = " + c.defaultValue
+          c =>
+            1.indent + c.nameInScala + ": " + c.typeInScala +
+              (if (c.isNotNull) "" else " = None")
         }.mkString(", " + eol) + ") { " + eol +
         eol +
         1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
@@ -213,7 +177,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     } else {
       "class " + className + " (" + eol +
         table.allColumns.map {
-          c => 1.indent + "val " + c.nameInScala + ": " + c.typeInScala + " = " + c.defaultValue
+          c =>
+            1.indent + "val " + c.nameInScala + ": " + c.typeInScala +
+              (if (c.isNotNull) "" else " = None")
         }.mkString(comma + eol) + ") { " + eol +
         eol +
         1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
@@ -244,7 +210,11 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
 
     val createMethod =
       1.indent + "def create(" + eol +
-        createColumns.map(c => 2.indent + c.nameInScala + ": " + c.typeInScala).mkString(comma + eol) + "): " + className + " = {" + eol +
+        createColumns.map {
+          c =>
+            2.indent + c.nameInScala + ": " + c.typeInScala +
+              (if (c.isNotNull) "" else " = None")
+        }.mkString(comma + eol) + "): " + className + " = {" + eol +
         2.indent + "DB localTx { implicit session =>" + eol +
         (table.autoIncrementColumns.size match {
           case 0 =>
