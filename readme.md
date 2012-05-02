@@ -138,7 +138,8 @@ object Member {
           ?,
           ?,
           ?
-        )""")
+        )
+      """)
         .bind(
           name,
           description,

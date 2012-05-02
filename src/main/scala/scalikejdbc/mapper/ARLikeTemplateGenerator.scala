@@ -120,7 +120,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               createColumns.map(c => (" " * 10) + c.name).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ") VALUES (" + lineBreak +
               (1 to createColumns.size).map(c => (" " * 10) + "?").mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ")\"\"\")" + lineBreak +
+              (" " * 8) + ")" + lineBreak +
+              (" " * 6) + "\"\"\")" + lineBreak +
               (" " * 8) + ".bind(" + lineBreak +
               createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ").update.apply()" + lineBreak +
@@ -143,7 +144,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               createColumns.map(c => (" " * 10) + c.name).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ") VALUES (" + lineBreak +
               (1 to createColumns.size).map(c => (" " * 10) + "?").mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ")\"\"\")" + lineBreak +
+              (" " * 8) + ")" + lineBreak +
+              (" " * 6) + "\"\"\")" + lineBreak +
               (" " * 8) + ".bind(" + lineBreak +
               createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ").updateAndReturnGeneratedKey.apply()" + lineBreak +
