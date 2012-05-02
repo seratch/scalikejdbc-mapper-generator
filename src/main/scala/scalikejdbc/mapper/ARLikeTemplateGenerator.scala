@@ -63,11 +63,10 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         lineBreak +
         "}"
     } else {
-      "class " + className(table) + " {" + lineBreak +
-        lineBreak +
+      "class " + className(table) + " (" + lineBreak +
         table.allColumns.map {
-          c => "  var " + columnName(c) + ": " + columnType(c) + " = " + defaultValue(c)
-        }.mkString(lineBreak) + lineBreak +
+          c => "  val " + columnName(c) + ": " + columnType(c) + " = " + defaultValue(c)
+        }.mkString("," + lineBreak) + ") { " + lineBreak +
         lineBreak +
         "  def save(): Unit = " + className(table) + ".save(this)" + lineBreak +
         lineBreak +
@@ -83,26 +82,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
 
     val mapper = {
       val prefix = table.name + "."
-      allColumns match {
-        case allColumns if allColumns.size <= 22 =>
-          "  val * = (rs: WrappedResultSet) => " + className(table) + "(" + lineBreak +
-            allColumns.map {
-              c =>
-                if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
-                else "    Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
-            }.mkString("," + lineBreak) + ")" + lineBreak
-        case _ =>
-          "  val * = (rs: WrappedResultSet) => {" + lineBreak +
-            "    val m = new " + className(table) + lineBreak +
-            allColumns.map {
-              c =>
-                "    m." + columnName(c) + " = " +
-                  (if (c.isNotNull) "rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
-                  else "Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")")
-            }.mkString(lineBreak) + lineBreak +
-            "    m" + lineBreak +
-            "  }" + lineBreak
-      }
+      "  val * = (rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
+        allColumns.map {
+          c =>
+            if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
+            else "    Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
+        }.mkString("," + lineBreak) + ")" + lineBreak
     }
 
     val createColumns = allColumns.filterNot {
@@ -125,19 +110,10 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               (" " * 8) + ".bind(" + lineBreak +
               createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ").update.apply()" + lineBreak +
-              (allColumns match {
-                case allColumns if allColumns.size <= 22 =>
-                  (" " * 6) + className(table) + "(" + lineBreak +
-                    createColumns.map {
-                      c => (" " * 8) + columnName(c) + " = " + columnName(c)
-                    }.mkString("," + lineBreak) + ")" + lineBreak
-                case allColumns =>
-                  (" " * 6) + "val m = new " + className(table) + lineBreak +
-                    createColumns.map {
-                      c => (" " * 8) + "m." + columnName(c) + " = " + columnName(c)
-                    }.mkString(lineBreak) + lineBreak +
-                    (" " * 6) + "m" + lineBreak
-              })
+              (" " * 6) + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
+              createColumns.map {
+                c => (" " * 8) + columnName(c) + " = " + columnName(c)
+              }.mkString("," + lineBreak) + ")" + lineBreak
           case _ =>
             (" " * 6) + "val generatedKey = SQL(\"\"\"" + lineBreak +
               (" " * 8) + "INSERT INTO " + table.name + " (" + lineBreak +
@@ -149,26 +125,14 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               (" " * 8) + ".bind(" + lineBreak +
               createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
               (" " * 8) + ").updateAndReturnGeneratedKey.apply()" + lineBreak +
-              (allColumns match {
-                case allColumns if allColumns.size <= 22 =>
-                  (" " * 6) + className(table) + "(" + lineBreak +
-                    table.autoIncrementColumns.map {
-                      c => (" " * 8) + columnName(c) + " = generatedKey, "
-                    }.mkString(lineBreak) + lineBreak +
-                    createColumns.map {
-                      c => (" " * 8) + columnName(c) + " = " + columnName(c)
-                    }.mkString("," + lineBreak) + lineBreak +
-                    (" " * 6) + ")" + lineBreak
-                case allColumns =>
-                  (" " * 6) + "val m = new " + className(table) + lineBreak +
-                    table.autoIncrementColumns.map {
-                      c => (" " * 6) + "m." + columnName(c) + " = generatedKey"
-                    }.mkString(lineBreak) + lineBreak +
-                    createColumns.map {
-                      c => (" " * 6) + "m." + columnName(c) + " = " + columnName(c)
-                    }.mkString(lineBreak) + lineBreak +
-                    (" " * 6) + "m" + lineBreak
-              })
+              (" " * 6) + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
+              table.autoIncrementColumns.map {
+                c => (" " * 8) + columnName(c) + " = generatedKey, "
+              }.mkString(lineBreak) + lineBreak +
+              createColumns.map {
+                c => (" " * 8) + columnName(c) + " = " + columnName(c)
+              }.mkString("," + lineBreak) + lineBreak +
+              (" " * 6) + ")" + lineBreak
         }) +
         (" " * 4) + "}" + lineBreak +
         (" " * 2) + "}" + lineBreak

@@ -44,9 +44,6 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
     } getOrElse {
       fail("The table is not found.")
     }
-    import com.example._
-    Member.create("Alice", Some("Example"), None, new java.util.Date)
-    Member.findAll() foreach println
     Thread.sleep(1000)
   }
 

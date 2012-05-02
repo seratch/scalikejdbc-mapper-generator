@@ -4,34 +4,33 @@ import scalikejdbc._
 import java.util.Date
 import java.sql.{ Clob, Blob }
 
-class UnNormalized {
-
-  var createdAt: Date = null
-  var id: Long = 0L
-  var v01: Byte = 0
-  var v02: Short = 0
-  var v03: Int = 0
-  var v04: Long = 0L
-  var v05: BigDecimal = null
-  var v06: BigDecimal = null
-  var v07: Double = 0.0D
-  var v08: Boolean = false
-  var v09: String = null
-  var v10: String = null
-  var v11: Clob = null
-  var v12: String = null
-  var v13: Array[Byte] = null
-  var v14: Array[Byte] = null
-  var v15: Blob = null
-  var v16: Boolean = false
-  var v17: Date = null
-  var v18: Date = null
-  var v19: Date = null
-  var v20: Date = null
-  var v21: Any = null
-  var v22: Boolean = false
-  var v23: Double = 0.0D
-  var v24: Double = 0.0D
+class UnNormalized(
+    val createdAt: Date = null,
+    val id: Long = 0L,
+    val v01: Byte = 0,
+    val v02: Short = 0,
+    val v03: Int = 0,
+    val v04: Long = 0L,
+    val v05: BigDecimal = null,
+    val v06: BigDecimal = null,
+    val v07: Double = 0.0D,
+    val v08: Boolean = false,
+    val v09: String = null,
+    val v10: String = null,
+    val v11: Clob = null,
+    val v12: String = null,
+    val v13: Array[Byte] = null,
+    val v14: Array[Byte] = null,
+    val v15: Blob = null,
+    val v16: Boolean = false,
+    val v17: Date = null,
+    val v18: Date = null,
+    val v19: Date = null,
+    val v20: Date = null,
+    val v21: Any = null,
+    val v22: Boolean = false,
+    val v23: Double = 0.0D,
+    val v24: Double = 0.0D) {
 
   def save(): Unit = UnNormalized.save(this)
 
@@ -41,36 +40,33 @@ class UnNormalized {
 
 object UnNormalized {
 
-  val * = (rs: WrappedResultSet) => {
-    val m = new UnNormalized
-    m.createdAt = rs.timestamp("UN_NORMALIZED.CREATED_AT").toJavaUtilDate
-    m.id = rs.long("UN_NORMALIZED.ID")
-    m.v01 = rs.byte("UN_NORMALIZED.V_01")
-    m.v02 = rs.short("UN_NORMALIZED.V_02")
-    m.v03 = rs.int("UN_NORMALIZED.V_03")
-    m.v04 = rs.long("UN_NORMALIZED.V_04")
-    m.v05 = rs.bigDecimal("UN_NORMALIZED.V_05")
-    m.v06 = rs.bigDecimal("UN_NORMALIZED.V_06")
-    m.v07 = rs.double("UN_NORMALIZED.V_07")
-    m.v08 = rs.boolean("UN_NORMALIZED.V_08")
-    m.v09 = rs.string("UN_NORMALIZED.V_09")
-    m.v10 = rs.string("UN_NORMALIZED.V_10")
-    m.v11 = rs.clob("UN_NORMALIZED.V_11")
-    m.v12 = rs.string("UN_NORMALIZED.V_12")
-    m.v13 = rs.bytes("UN_NORMALIZED.V_13")
-    m.v14 = rs.bytes("UN_NORMALIZED.V_14")
-    m.v15 = rs.blob("UN_NORMALIZED.V_15")
-    m.v16 = rs.boolean("UN_NORMALIZED.V_16")
-    m.v17 = rs.date("UN_NORMALIZED.V_17").toJavaUtilDate
-    m.v18 = rs.time("UN_NORMALIZED.V_18").toJavaUtilDate
-    m.v19 = rs.time("UN_NORMALIZED.V_19").toJavaUtilDate
-    m.v20 = rs.timestamp("UN_NORMALIZED.V_20").toJavaUtilDate
-    m.v21 = rs.any("UN_NORMALIZED.V_21")
-    m.v22 = rs.boolean("UN_NORMALIZED.V_22")
-    m.v23 = rs.double("UN_NORMALIZED.V_23")
-    m.v24 = rs.double("UN_NORMALIZED.V_24")
-    m
-  }
+  val * = (rs: WrappedResultSet) => new UnNormalized(
+    rs.timestamp("UN_NORMALIZED.CREATED_AT").toJavaUtilDate,
+    rs.long("UN_NORMALIZED.ID"),
+    rs.byte("UN_NORMALIZED.V_01"),
+    rs.short("UN_NORMALIZED.V_02"),
+    rs.int("UN_NORMALIZED.V_03"),
+    rs.long("UN_NORMALIZED.V_04"),
+    rs.bigDecimal("UN_NORMALIZED.V_05"),
+    rs.bigDecimal("UN_NORMALIZED.V_06"),
+    rs.double("UN_NORMALIZED.V_07"),
+    rs.boolean("UN_NORMALIZED.V_08"),
+    rs.string("UN_NORMALIZED.V_09"),
+    rs.string("UN_NORMALIZED.V_10"),
+    rs.clob("UN_NORMALIZED.V_11"),
+    rs.string("UN_NORMALIZED.V_12"),
+    rs.bytes("UN_NORMALIZED.V_13"),
+    rs.bytes("UN_NORMALIZED.V_14"),
+    rs.blob("UN_NORMALIZED.V_15"),
+    rs.boolean("UN_NORMALIZED.V_16"),
+    rs.date("UN_NORMALIZED.V_17").toJavaUtilDate,
+    rs.time("UN_NORMALIZED.V_18").toJavaUtilDate,
+    rs.time("UN_NORMALIZED.V_19").toJavaUtilDate,
+    rs.timestamp("UN_NORMALIZED.V_20").toJavaUtilDate,
+    rs.any("UN_NORMALIZED.V_21"),
+    rs.boolean("UN_NORMALIZED.V_22"),
+    rs.double("UN_NORMALIZED.V_23"),
+    rs.double("UN_NORMALIZED.V_24"))
 
   def find(id: Long): Option[UnNormalized] = {
     DB readOnly { implicit session =>
@@ -186,7 +182,8 @@ object UnNormalized {
           ?,
           ?,
           ?
-        )""")
+        )
+      """)
         .bind(
           createdAt,
           v01,
@@ -214,41 +211,43 @@ object UnNormalized {
           v23,
           v24
         ).updateAndReturnGeneratedKey.apply()
-      val m = new UnNormalized
-      m.id = generatedKey
-      m.createdAt = createdAt
-      m.v01 = v01
-      m.v02 = v02
-      m.v03 = v03
-      m.v04 = v04
-      m.v05 = v05
-      m.v06 = v06
-      m.v07 = v07
-      m.v08 = v08
-      m.v09 = v09
-      m.v10 = v10
-      m.v11 = v11
-      m.v12 = v12
-      m.v13 = v13
-      m.v14 = v14
-      m.v15 = v15
-      m.v16 = v16
-      m.v17 = v17
-      m.v18 = v18
-      m.v19 = v19
-      m.v20 = v20
-      m.v21 = v21
-      m.v22 = v22
-      m.v23 = v23
-      m.v24 = v24
-      m
+      new UnNormalized(
+        id = generatedKey,
+        createdAt = createdAt,
+        v01 = v01,
+        v02 = v02,
+        v03 = v03,
+        v04 = v04,
+        v05 = v05,
+        v06 = v06,
+        v07 = v07,
+        v08 = v08,
+        v09 = v09,
+        v10 = v10,
+        v11 = v11,
+        v12 = v12,
+        v13 = v13,
+        v14 = v14,
+        v15 = v15,
+        v16 = v16,
+        v17 = v17,
+        v18 = v18,
+        v19 = v19,
+        v20 = v20,
+        v21 = v21,
+        v22 = v22,
+        v23 = v23,
+        v24 = v24
+      )
     }
   }
 
   def save(m: UnNormalized): Unit = {
     DB localTx { implicit session =>
       SQL("""
-        UPDATE UN_NORMALIZED SET 
+        UPDATE 
+          UN_NORMALIZED
+        SET 
           CREATED_AT = ?,
           ID = ?,
           V_01 = ?,

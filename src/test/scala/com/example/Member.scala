@@ -76,7 +76,8 @@ object Member {
           ?,
           ?,
           ?
-        )""")
+        )
+      """)
         .bind(
           name,
           description,
@@ -96,7 +97,9 @@ object Member {
   def save(m: Member): Unit = {
     DB localTx { implicit session =>
       SQL("""
-        UPDATE MEMBER SET 
+        UPDATE 
+          MEMBER
+        SET 
           ID = ?,
           NAME = ?,
           DESCRIPTION = ?,
