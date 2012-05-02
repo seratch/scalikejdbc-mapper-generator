@@ -4,11 +4,11 @@ import scalikejdbc._
 import java.util.Date
 
 case class Member(
-    id: Long,
-    name: String,
-    description: Option[String],
-    birthday: Option[Date],
-    createdAt: Date) {
+    id: Long = 0L,
+    name: String = null,
+    description: Option[String] = None,
+    birthday: Option[Date] = None,
+    createdAt: Date = null) {
 
   def save(): Unit = Member.save(this)
 
@@ -19,11 +19,11 @@ case class Member(
 object Member {
 
   val * = (rs: WrappedResultSet) => Member(
-    rs.long("MEMBER.ID"),
-    rs.string("MEMBER.NAME"),
-    Option(rs.string("MEMBER.DESCRIPTION")),
-    Option(rs.date("MEMBER.BIRTHDAY")).map(_.toJavaUtilDate),
-    rs.timestamp("MEMBER.CREATED_AT").toJavaUtilDate)
+    id = rs.long("MEMBER.ID"),
+    name = rs.string("MEMBER.NAME"),
+    description = Option(rs.string("MEMBER.DESCRIPTION")),
+    birthday = Option(rs.date("MEMBER.BIRTHDAY")).map(_.toJavaUtilDate),
+    createdAt = rs.timestamp("MEMBER.CREATED_AT").toJavaUtilDate)
 
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>

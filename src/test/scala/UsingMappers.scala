@@ -19,4 +19,8 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
     Member.findBy("description = ?", "Example") foreach println
   }
 
+  it should "work fine with UnNormalized" in {
+    UnNormalized.countAll()
+  }
+
 }

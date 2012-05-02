@@ -26,240 +26,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
   import java.io.{ OutputStreamWriter, FileOutputStream, File }
 
   private val packageName = config.packageName
-  private val lineBreak = config.lineBreak
-
-  def writeFileIfNotExist(): Unit = {
-    val file = new File(config.srcDir + "/" + packageName.replaceAll("\\.", "/") + "/" + className(table) + ".scala")
-    if (file.exists) {
-      println("\"" + packageName + "." + className(table) + "\"" + " already exists.")
-    } else {
-      mkdirRecursively(file.getParentFile)
-      using(new FileOutputStream(file)) {
-        fos =>
-          using(new OutputStreamWriter(fos)) {
-            writer =>
-              writer.write(generateAll())
-              println("\"" + packageName + "." + className(table) + "\"" + " created.")
-          }
-      }
-    }
-  }
-
-  def mkdirRecursively(file: File): Unit = {
-    if (!file.getParentFile.exists) mkdirRecursively(file.getParentFile)
-    if (!file.exists) file.mkdir()
-  }
-
-  def classPart: String = {
-    if (table.allColumns.size <= 22) {
-      "case class " + className(table) + "(" + lineBreak +
-        table.allColumns.map {
-          c => "  " + columnName(c) + ": " + columnType(c)
-        }.mkString(", " + lineBreak) + ") { " + lineBreak +
-        lineBreak +
-        "  def save(): Unit = " + className(table) + ".save(this)" + lineBreak +
-        lineBreak +
-        "  def destroy(): Unit = " + className(table) + ".delete(this)" + lineBreak +
-        lineBreak +
-        "}"
-    } else {
-      "class " + className(table) + " (" + lineBreak +
-        table.allColumns.map {
-          c => "  val " + columnName(c) + ": " + columnType(c) + " = " + defaultValue(c)
-        }.mkString("," + lineBreak) + ") { " + lineBreak +
-        lineBreak +
-        "  def save(): Unit = " + className(table) + ".save(this)" + lineBreak +
-        lineBreak +
-        "  def destroy(): Unit = " + className(table) + ".delete(this)" + lineBreak +
-        lineBreak +
-        "}"
-    }
-  }
-
-  def objectPart: String = {
-    val allColumns = table.allColumns
-    val pkColumns = table.primaryKeyColumns
-
-    val mapper = {
-      val prefix = table.name + "."
-      "  val * = (rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
-        allColumns.map {
-          c =>
-            if (c.isNotNull) "    rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, false)
-            else "    Option(rs." + extractorName(c) + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
-        }.mkString("," + lineBreak) + ")" + lineBreak
-    }
-
-    val createColumns = allColumns.filterNot {
-      c => table.autoIncrementColumns.find(aic => aic.name == c.name).isDefined
-    }
-
-    val createMethod =
-      (" " * 2) + "def create(" + lineBreak +
-        createColumns.map(c => (" " * 4) + columnName(c) + ": " + columnType(c)).mkString("," + lineBreak) + "): " + className(table) + " = {" + lineBreak +
-        (" " * 4) + "DB localTx { implicit session =>" + lineBreak +
-        (table.autoIncrementColumns.size match {
-          case 0 =>
-            (" " * 6) + "SQL(\"\"\"" + lineBreak +
-              (" " * 8) + "INSERT INTO " + table.name + " (" + lineBreak +
-              createColumns.map(c => (" " * 10) + c.name).mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ") VALUES (" + lineBreak +
-              (1 to createColumns.size).map(c => (" " * 10) + "?").mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ")" + lineBreak +
-              (" " * 6) + "\"\"\")" + lineBreak +
-              (" " * 8) + ".bind(" + lineBreak +
-              createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ").update.apply()" + lineBreak +
-              (" " * 6) + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
-              createColumns.map {
-                c => (" " * 8) + columnName(c) + " = " + columnName(c)
-              }.mkString("," + lineBreak) + ")" + lineBreak
-          case _ =>
-            (" " * 6) + "val generatedKey = SQL(\"\"\"" + lineBreak +
-              (" " * 8) + "INSERT INTO " + table.name + " (" + lineBreak +
-              createColumns.map(c => (" " * 10) + c.name).mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ") VALUES (" + lineBreak +
-              (1 to createColumns.size).map(c => (" " * 10) + "?").mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ")" + lineBreak +
-              (" " * 6) + "\"\"\")" + lineBreak +
-              (" " * 8) + ".bind(" + lineBreak +
-              createColumns.map(c => (" " * 10) + columnName(c)).mkString("," + lineBreak) + lineBreak +
-              (" " * 8) + ").updateAndReturnGeneratedKey.apply()" + lineBreak +
-              (" " * 6) + (if (allColumns.size > 22) "new " else "") + className(table) + "(" + lineBreak +
-              table.autoIncrementColumns.map {
-                c => (" " * 8) + columnName(c) + " = generatedKey, "
-              }.mkString(lineBreak) + lineBreak +
-              createColumns.map {
-                c => (" " * 8) + columnName(c) + " = " + columnName(c)
-              }.mkString("," + lineBreak) + lineBreak +
-              (" " * 6) + ")" + lineBreak
-        }) +
-        (" " * 4) + "}" + lineBreak +
-        (" " * 2) + "}" + lineBreak
-
-    val saveMethod =
-      (" " * 2) + "def save(m: " + className(table) + "): Unit = {" + lineBreak +
-        (" " * 4) + "DB localTx { implicit session =>" + lineBreak +
-        (" " * 6) + "SQL(\"\"\"" + lineBreak +
-        (" " * 8) + "UPDATE " + lineBreak +
-        (" " * 10) + table.name + lineBreak +
-        (" " * 8) + "SET " + lineBreak +
-        allColumns.map(c => (" " * 10) + c.name + " = ?").mkString("," + lineBreak) + lineBreak +
-        (" " * 8) + "WHERE " + lineBreak +
-        pkColumns.map(pk => (" " * 10) + pk.name + " = ?").mkString(" AND ") + lineBreak +
-        (" " * 6) + "\"\"\")" + lineBreak +
-        (" " * 6) + ".bind(" + lineBreak +
-        allColumns.map(c => (" " * 8) + "m." + columnName(c)).mkString("," + lineBreak) + ", " + lineBreak +
-        pkColumns.map(pk => (" " * 8) + "m." + columnName(pk)).mkString("," + lineBreak) + lineBreak +
-        (" " * 6) + ").update.apply()" + lineBreak +
-        (" " * 4) + "}" + lineBreak +
-        (" " * 2) + "}" + lineBreak
-
-    val deleteMethod =
-      "  def delete(m: " + className(table) + "): Unit = {" + lineBreak +
-        "    DB localTx { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"DELETE FROM " + table.name + " WHERE " + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ") + "\"\"\")" + lineBreak +
-        "        .bind(" + pkColumns.map(pk => "m." + columnName(pk)).mkString(", ") + ").update.apply()" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    val findMethod =
-      "  def find(" + pkColumns.map(pk => columnName(pk) + ": " + columnType(pk)).mkString(", ") + "): Option[" + className(table) + "] = {" + lineBreak +
-        "    DB readOnly { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"SELECT * FROM " + table.name + " WHERE " + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ") + "\"\"\")" + lineBreak +
-        "        .bind(" + pkColumns.map(pk => columnName(pk)).mkString(", ") + ").map(*).single.apply()" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    val countAllMethod =
-      "  def countAll(): Long = {" + lineBreak +
-        "    DB readOnly { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"SELECT COUNT(1) FROM " + table.name + "\"\"\")" + lineBreak +
-        "        .map(rs => rs.long(1)).single.apply().get" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    val findAllMethod =
-      "  def findAll(): List[" + className(table) + "] = {" + lineBreak +
-        "    DB readOnly { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"SELECT * FROM " + table.name + "\"\"\").map(*).list.apply()" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    val findByMethod =
-      "  def findBy(where: String, params: Any*): List[" + className(table) + "] = {" + lineBreak +
-        "    DB readOnly { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"SELECT * FROM " + table.name + " WHERE \"\"\" + where)" + lineBreak +
-        "        .bind(params:_*).map(*).list.apply()" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    val countByMethod =
-      "  def countBy(where: String, params: Any*): Long = {" + lineBreak +
-        "    DB readOnly { implicit session =>" + lineBreak +
-        "      SQL(\"\"\"SELECT count(1) FROM " + table.name + " WHERE \"\"\" + where)" + lineBreak +
-        "        .bind(params:_*).map(rs => rs.long(1)).single.apply().get" + lineBreak +
-        "    }" + lineBreak +
-        "  }" + lineBreak
-
-    "object " + className(table) + " {" + lineBreak +
-      lineBreak +
-      mapper +
-      lineBreak +
-      findMethod +
-      lineBreak +
-      findAllMethod +
-      lineBreak +
-      countAllMethod +
-      lineBreak +
-      findByMethod +
-      lineBreak +
-      countByMethod +
-      lineBreak +
-      createMethod +
-      lineBreak +
-      saveMethod +
-      lineBreak +
-      deleteMethod +
-      lineBreak +
-      "}"
-  }
-
-  def generateAll(): String = {
-    val dateImport = table.allColumns.find(c => columnType(c) == TypeName.Date) match {
-      case Some(c) => "import java.util.Date" + lineBreak
-      case _ => ""
-    }
-    val javaSqlImport = table.allColumns.flatMap {
-      c =>
-        columnType(c, true) match {
-          case TypeName.Blob => Some("Blob")
-          case TypeName.Clob => Some("Clob")
-          case TypeName.Ref => Some("Ref")
-          case TypeName.Struct => Some("Struct")
-          case _ => None
-        }
-    } match {
-      case classes if classes.size > 0 => "import java.sql.{" + classes.mkString(", ") + "}" + lineBreak
-      case _ => ""
-    }
-    "package " + config.packageName + lineBreak +
-      lineBreak +
-      "import scalikejdbc._" + lineBreak +
-      dateImport +
-      javaSqlImport +
-      lineBreak +
-      classPart + lineBreak +
-      lineBreak +
-      objectPart + lineBreak
-  }
-
-  private def className(table: Table): String = toCamelCase(table.name)
-
-  private def columnName(column: Column): String = {
-    val camelCase: String = toCamelCase(column.name)
-    camelCase.head.toLower + camelCase.tail
-  }
+  private val className = toClassName(table)
+  private val comma = ","
+  private val eol = config.lineBreak
 
   object TypeName {
     val Any = "Any"
@@ -281,8 +50,19 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val BigDecimal = "BigDecimal" // scala.math.BigDecimal
   }
 
-  private def columnType(column: Column, raw: Boolean = false): String = {
-    val rawType = column.dataType match {
+  case class IndentGenerator(i: Int) {
+    def indent: String = " " * i * 2
+  }
+  implicit def convertIntToIndentGenerator(i: Int) = IndentGenerator(i)
+
+  case class ColumnInScala(underlying: Column) {
+
+    lazy val nameInScala: String = {
+      val camelCase: String = toCamelCase(underlying.name)
+      camelCase.head.toLower + camelCase.tail
+    }
+
+    lazy val rawTypeInScala: String = underlying.dataType match {
       case JavaSqlTypes.ARRAY => TypeName.AnyArray
       case JavaSqlTypes.BIGINT => TypeName.Long
       case JavaSqlTypes.BINARY => TypeName.ByteArray
@@ -315,80 +95,311 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       case JavaSqlTypes.VARCHAR => TypeName.String
       case _ => TypeName.Any
     }
-    if (raw || column.isNotNull) rawType
-    else "Option[" + rawType + "]"
-  }
 
-  private def extractorName(column: Column): String = column.dataType match {
-    case JavaSqlTypes.ARRAY => "array"
-    case JavaSqlTypes.BIGINT => "long"
-    case JavaSqlTypes.BINARY => "bytes"
-    case JavaSqlTypes.BIT => "boolean"
-    case JavaSqlTypes.BLOB => "blob"
-    case JavaSqlTypes.BOOLEAN => "boolean"
-    case JavaSqlTypes.CHAR => "string"
-    case JavaSqlTypes.CLOB => "clob"
-    case JavaSqlTypes.DATALINK => "any"
-    case JavaSqlTypes.DATE => "date"
-    case JavaSqlTypes.DECIMAL => "bigDecimal"
-    case JavaSqlTypes.DISTINCT => "any"
-    case JavaSqlTypes.DOUBLE => "double"
-    case JavaSqlTypes.FLOAT => "float"
-    case JavaSqlTypes.INTEGER => "int"
-    case JavaSqlTypes.JAVA_OBJECT => "any"
-    case JavaSqlTypes.LONGVARBINARY => "bytes"
-    case JavaSqlTypes.LONGVARCHAR => "string"
-    case JavaSqlTypes.NULL => "any"
-    case JavaSqlTypes.NUMERIC => "bigDecimal"
-    case JavaSqlTypes.OTHER => "any"
-    case JavaSqlTypes.REAL => "float"
-    case JavaSqlTypes.REF => "ref"
-    case JavaSqlTypes.SMALLINT => "short"
-    case JavaSqlTypes.STRUCT => "any"
-    case JavaSqlTypes.TIME => "time"
-    case JavaSqlTypes.TIMESTAMP => "timestamp"
-    case JavaSqlTypes.TINYINT => "byte"
-    case JavaSqlTypes.VARBINARY => "bytes"
-    case JavaSqlTypes.VARCHAR => "string"
-    case _ => "any"
-  }
-
-  private def defaultValue(column: Column): String = {
-    val rawType = column.dataType match {
-      case JavaSqlTypes.ARRAY => "null"
-      case JavaSqlTypes.BIGINT => "0L"
-      case JavaSqlTypes.BINARY => "null"
-      case JavaSqlTypes.BIT => "false"
-      case JavaSqlTypes.BLOB => "null"
-      case JavaSqlTypes.BOOLEAN => "false"
-      case JavaSqlTypes.CHAR => "null"
-      case JavaSqlTypes.CLOB => "null"
-      case JavaSqlTypes.DATALINK => "null"
-      case JavaSqlTypes.DATE => "null"
-      case JavaSqlTypes.DECIMAL => "null"
-      case JavaSqlTypes.DISTINCT => "null"
-      case JavaSqlTypes.DOUBLE => "0.0D"
-      case JavaSqlTypes.FLOAT => "0.0F"
-      case JavaSqlTypes.INTEGER => "0"
-      case JavaSqlTypes.JAVA_OBJECT => "null"
-      case JavaSqlTypes.LONGVARBINARY => "null"
-      case JavaSqlTypes.LONGVARCHAR => "null"
-      case JavaSqlTypes.NULL => "null"
-      case JavaSqlTypes.NUMERIC => "null"
-      case JavaSqlTypes.OTHER => "null"
-      case JavaSqlTypes.REAL => "0.0F"
-      case JavaSqlTypes.REF => "null"
-      case JavaSqlTypes.SMALLINT => "0"
-      case JavaSqlTypes.STRUCT => "null"
-      case JavaSqlTypes.TIME => "null"
-      case JavaSqlTypes.TIMESTAMP => "null"
-      case JavaSqlTypes.TINYINT => "0"
-      case JavaSqlTypes.VARBINARY => "null"
-      case JavaSqlTypes.VARCHAR => "null"
-      case _ => "null"
+    lazy val typeInScala: String = {
+      if (underlying.isNotNull) rawTypeInScala
+      else "Option[" + rawTypeInScala + "]"
     }
-    if (column.isNotNull) rawType
-    else "None"
+
+    lazy val extractorName: String = underlying.dataType match {
+      case JavaSqlTypes.ARRAY => "array"
+      case JavaSqlTypes.BIGINT => "long"
+      case JavaSqlTypes.BINARY => "bytes"
+      case JavaSqlTypes.BIT => "boolean"
+      case JavaSqlTypes.BLOB => "blob"
+      case JavaSqlTypes.BOOLEAN => "boolean"
+      case JavaSqlTypes.CHAR => "string"
+      case JavaSqlTypes.CLOB => "clob"
+      case JavaSqlTypes.DATALINK => "any"
+      case JavaSqlTypes.DATE => "date"
+      case JavaSqlTypes.DECIMAL => "bigDecimal"
+      case JavaSqlTypes.DISTINCT => "any"
+      case JavaSqlTypes.DOUBLE => "double"
+      case JavaSqlTypes.FLOAT => "float"
+      case JavaSqlTypes.INTEGER => "int"
+      case JavaSqlTypes.JAVA_OBJECT => "any"
+      case JavaSqlTypes.LONGVARBINARY => "bytes"
+      case JavaSqlTypes.LONGVARCHAR => "string"
+      case JavaSqlTypes.NULL => "any"
+      case JavaSqlTypes.NUMERIC => "bigDecimal"
+      case JavaSqlTypes.OTHER => "any"
+      case JavaSqlTypes.REAL => "float"
+      case JavaSqlTypes.REF => "ref"
+      case JavaSqlTypes.SMALLINT => "short"
+      case JavaSqlTypes.STRUCT => "any"
+      case JavaSqlTypes.TIME => "time"
+      case JavaSqlTypes.TIMESTAMP => "timestamp"
+      case JavaSqlTypes.TINYINT => "byte"
+      case JavaSqlTypes.VARBINARY => "bytes"
+      case JavaSqlTypes.VARCHAR => "string"
+      case _ => "any"
+    }
+
+    lazy val defaultValue: String = {
+      val rawType = underlying.dataType match {
+        case JavaSqlTypes.ARRAY => "null"
+        case JavaSqlTypes.BIGINT => "0L"
+        case JavaSqlTypes.BINARY => "null"
+        case JavaSqlTypes.BIT => "false"
+        case JavaSqlTypes.BLOB => "null"
+        case JavaSqlTypes.BOOLEAN => "false"
+        case JavaSqlTypes.CHAR => "null"
+        case JavaSqlTypes.CLOB => "null"
+        case JavaSqlTypes.DATALINK => "null"
+        case JavaSqlTypes.DATE => "null"
+        case JavaSqlTypes.DECIMAL => "null"
+        case JavaSqlTypes.DISTINCT => "null"
+        case JavaSqlTypes.DOUBLE => "0.0D"
+        case JavaSqlTypes.FLOAT => "0.0F"
+        case JavaSqlTypes.INTEGER => "0"
+        case JavaSqlTypes.JAVA_OBJECT => "null"
+        case JavaSqlTypes.LONGVARBINARY => "null"
+        case JavaSqlTypes.LONGVARCHAR => "null"
+        case JavaSqlTypes.NULL => "null"
+        case JavaSqlTypes.NUMERIC => "null"
+        case JavaSqlTypes.OTHER => "null"
+        case JavaSqlTypes.REAL => "0.0F"
+        case JavaSqlTypes.REF => "null"
+        case JavaSqlTypes.SMALLINT => "0"
+        case JavaSqlTypes.STRUCT => "null"
+        case JavaSqlTypes.TIME => "null"
+        case JavaSqlTypes.TIMESTAMP => "null"
+        case JavaSqlTypes.TINYINT => "0"
+        case JavaSqlTypes.VARBINARY => "null"
+        case JavaSqlTypes.VARCHAR => "null"
+        case _ => "null"
+      }
+      if (underlying.isNotNull) rawType
+      else "None"
+    }
+
+  }
+  implicit def convertColumnToColumnInScala(column: Column): ColumnInScala = ColumnInScala(column)
+
+  def writeFileIfNotExist(): Unit = {
+    val file = new File(config.srcDir + "/" + packageName.replaceAll("\\.", "/") + "/" + className + ".scala")
+    if (file.exists) {
+      println("\"" + packageName + "." + className + "\"" + " already exists.")
+    } else {
+      mkdirRecursively(file.getParentFile)
+      using(new FileOutputStream(file)) {
+        fos =>
+          using(new OutputStreamWriter(fos)) {
+            writer =>
+              writer.write(generateAll())
+              println("\"" + packageName + "." + className + "\"" + " created.")
+          }
+      }
+    }
+  }
+
+  def mkdirRecursively(file: File): Unit = {
+    if (!file.getParentFile.exists) mkdirRecursively(file.getParentFile)
+    if (!file.exists) file.mkdir()
+  }
+
+  def classPart: String = {
+    if (table.allColumns.size <= 22) {
+      "case class " + className + "(" + eol +
+        table.allColumns.map {
+          c => 1.indent + c.nameInScala + ": " + c.typeInScala + " = " + c.defaultValue
+        }.mkString(", " + eol) + ") { " + eol +
+        eol +
+        1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
+        eol +
+        1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +
+        eol +
+        "}"
+    } else {
+      "class " + className + " (" + eol +
+        table.allColumns.map {
+          c => 1.indent + "val " + c.nameInScala + ": " + c.typeInScala + " = " + c.defaultValue
+        }.mkString(comma + eol) + ") { " + eol +
+        eol +
+        1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
+        eol +
+        1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +
+        eol +
+        "}"
+    }
+  }
+
+  def objectPart: String = {
+    val allColumns = table.allColumns
+    val pkColumns = table.primaryKeyColumns
+
+    val mapper = {
+      val prefix = table.name + "."
+      1.indent + "val * = (rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
+        allColumns.map {
+          c =>
+            if (c.isNotNull) 2.indent + c.nameInScala + " = rs." + c.extractorName + "(\"" + prefix + c.name + "\")" + cast(c, false)
+            else 2.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
+        }.mkString(comma + eol) + ")" + eol
+    }
+
+    val createColumns = allColumns.filterNot {
+      c => table.autoIncrementColumns.find(aic => aic.name == c.name).isDefined
+    }
+
+    val createMethod =
+      1.indent + "def create(" + eol +
+        createColumns.map(c => 2.indent + c.nameInScala + ": " + c.typeInScala).mkString(comma + eol) + "): " + className + " = {" + eol +
+        2.indent + "DB localTx { implicit session =>" + eol +
+        (table.autoIncrementColumns.size match {
+          case 0 =>
+            3.indent + "SQL(\"\"\"" + eol +
+              4.indent + "INSERT INTO " + table.name + " (" + eol +
+              createColumns.map(c => 5.indent + c.name).mkString(comma + eol) + eol +
+              4.indent + ") VALUES (" + eol +
+              (1 to createColumns.size).map(c => 5.indent + "?").mkString(comma + eol) + eol +
+              4.indent + ")" + eol +
+              3.indent + "\"\"\")" + eol +
+              4.indent + ".bind(" + eol +
+              createColumns.map(c => 5.indent + c.nameInScala).mkString(comma + eol) + eol +
+              4.indent + ").update.apply()" + eol +
+              3.indent + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
+              createColumns.map {
+                c => 4.indent + c.nameInScala + " = " + c.nameInScala
+              }.mkString(comma + eol) + ")" + eol
+          case _ =>
+            3.indent + "val generatedKey = SQL(\"\"\"" + eol +
+              4.indent + "INSERT INTO " + table.name + " (" + eol +
+              createColumns.map(c => 5.indent + c.name).mkString(comma + eol) + eol +
+              4.indent + ") VALUES (" + eol +
+              (1 to createColumns.size).map(c => 5.indent + "?").mkString(comma + eol) + eol +
+              4.indent + ")" + eol +
+              3.indent + "\"\"\")" + eol +
+              4.indent + ".bind(" + eol +
+              createColumns.map(c => 5.indent + c.nameInScala).mkString(comma + eol) + eol +
+              4.indent + ").updateAndReturnGeneratedKey.apply()" + eol +
+              3.indent + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
+              table.autoIncrementColumns.map {
+                c => 4.indent + c.nameInScala + " = generatedKey, "
+              }.mkString(eol) + eol +
+              createColumns.map {
+                c => 4.indent + c.nameInScala + " = " + c.nameInScala
+              }.mkString(comma + eol) + eol +
+              3.indent + ")" + eol
+        }) +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val saveMethod =
+      1.indent + "def save(m: " + className + "): Unit = {" + eol +
+        2.indent + "DB localTx { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"" + eol +
+        4.indent + "UPDATE " + eol +
+        5.indent + table.name + eol +
+        4.indent + "SET " + eol +
+        allColumns.map(c => 5.indent + c.name + " = ?").mkString(comma + eol) + eol +
+        4.indent + "WHERE " + eol +
+        pkColumns.map(pk => 5.indent + pk.name + " = ?").mkString(" AND ") + eol +
+        3.indent + "\"\"\")" + eol +
+        3.indent + ".bind(" + eol +
+        allColumns.map(c => 4.indent + "m." + c.nameInScala).mkString(comma + eol) + ", " + eol +
+        pkColumns.map(pk => 4.indent + "m." + pk.nameInScala).mkString(comma + eol) + eol +
+        3.indent + ").update.apply()" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val deleteMethod =
+      1.indent + "def delete(m: " + className + "): Unit = {" + eol +
+        2.indent + "DB localTx { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"DELETE FROM " + table.name + " WHERE " + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ") + "\"\"\")" + eol +
+        4.indent + ".bind(" + pkColumns.map(pk => "m." + pk.nameInScala).mkString(", ") + ").update.apply()" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val findMethod =
+      1.indent + "def find(" + pkColumns.map(pk => pk.nameInScala + ": " + pk.typeInScala).mkString(", ") + "): Option[" + className + "] = {" + eol +
+        2.indent + "DB readOnly { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE " + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ") + "\"\"\")" + eol +
+        4.indent + ".bind(" + pkColumns.map(pk => pk.nameInScala).mkString(", ") + ").map(*).single.apply()" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val countAllMethod =
+      1.indent + "def countAll(): Long = {" + eol +
+        2.indent + "DB readOnly { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"SELECT COUNT(1) FROM " + table.name + "\"\"\")" + eol +
+        4.indent + ".map(rs => rs.long(1)).single.apply().get" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val findAllMethod =
+      1.indent + "def findAll(): List[" + className + "] = {" + eol +
+        2.indent + "DB readOnly { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"SELECT * FROM " + table.name + "\"\"\").map(*).list.apply()" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val findByMethod =
+      1.indent + "def findBy(where: String, params: Any*): List[" + className + "] = {" + eol +
+        2.indent + "DB readOnly { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE \"\"\" + where)" + eol +
+        4.indent + ".bind(params:_*).map(*).list.apply()" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    val countByMethod =
+      1.indent + "def countBy(where: String, params: Any*): Long = {" + eol +
+        2.indent + "DB readOnly { implicit session =>" + eol +
+        3.indent + "SQL(\"\"\"SELECT count(1) FROM " + table.name + " WHERE \"\"\" + where)" + eol +
+        4.indent + ".bind(params:_*).map(rs => rs.long(1)).single.apply().get" + eol +
+        2.indent + "}" + eol +
+        1.indent + "}" + eol
+
+    "object " + className + " {" + eol +
+      eol +
+      mapper +
+      eol +
+      findMethod +
+      eol +
+      findAllMethod +
+      eol +
+      countAllMethod +
+      eol +
+      findByMethod +
+      eol +
+      countByMethod +
+      eol +
+      createMethod +
+      eol +
+      saveMethod +
+      eol +
+      deleteMethod +
+      eol +
+      "}"
+  }
+
+  def generateAll(): String = {
+    val dateImport = table.allColumns.find(c => c.typeInScala == TypeName.Date) match {
+      case Some(c) => "import java.util.Date" + eol
+      case _ => ""
+    }
+    val javaSqlImport = table.allColumns.flatMap {
+      c =>
+        c.rawTypeInScala match {
+          case TypeName.Blob => Some("Blob")
+          case TypeName.Clob => Some("Clob")
+          case TypeName.Ref => Some("Ref")
+          case TypeName.Struct => Some("Struct")
+          case _ => None
+        }
+    } match {
+      case classes if classes.size > 0 => "import java.sql.{" + classes.mkString(", ") + "}" + eol
+      case _ => ""
+    }
+    "package " + config.packageName + eol +
+      eol +
+      "import scalikejdbc._" + eol +
+      dateImport +
+      javaSqlImport +
+      eol +
+      classPart + eol +
+      eol +
+      objectPart + eol
   }
 
   private def cast(column: Column, optional: Boolean): String = column.dataType match {
@@ -401,6 +412,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     case JavaSqlTypes.TIMESTAMP => ".toJavaUtilDate"
     case _ => ""
   }
+
+  private def toClassName(table: Table): String = toCamelCase(table.name)
 
   private def toCamelCase(s: String): String = s.split("_").toList.foldLeft("") {
     (camelCaseString, part) =>
