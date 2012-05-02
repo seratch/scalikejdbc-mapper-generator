@@ -60,17 +60,17 @@ create table member (
 This tool will generate the following Scala source code:
 
 ```scala
-package com.example.models
+package com.example
 
 import scalikejdbc._
 import java.util.Date
 
 case class Member(
-    id: Long,
-    name: String,
-    description: Option[String],
-    birthday: Option[Date],
-    createdAt: Date) {
+  id: Long, 
+  name: String, 
+  description: Option[String], 
+  birthday: Option[Date], 
+  createdAt: Date) { 
 
   def save(): Unit = Member.save(this)
 
@@ -110,14 +110,14 @@ object Member {
   def findBy(where: String, params: Any*): List[Member] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM MEMBER WHERE """ + where)
-        .bind(params: _*).map(*).list.apply()
+        .bind(params:_*).map(*).list.apply()
     }
   }
 
   def countBy(where: String, params: Any*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM MEMBER WHERE """ + where)
-        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
+        .bind(params:_*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -147,7 +147,7 @@ object Member {
           createdAt
         ).updateAndReturnGeneratedKey.apply()
       Member(
-        id = generatedKey,
+        id = generatedKey, 
         name = name,
         description = description,
         birthday = birthday,
@@ -159,7 +159,9 @@ object Member {
   def save(m: Member): Unit = {
     DB localTx { implicit session =>
       SQL("""
-        UPDATE MEMBER SET 
+        UPDATE 
+          MEMBER
+        SET 
           ID = ?,
           NAME = ?,
           DESCRIPTION = ?,
@@ -168,14 +170,14 @@ object Member {
         WHERE 
           ID = ?
       """)
-        .bind(
-          m.id,
-          m.name,
-          m.description,
-          m.birthday,
-          m.createdAt,
-          m.id
-        ).update.apply()
+      .bind(
+        m.id,
+        m.name,
+        m.description,
+        m.birthday,
+        m.createdAt, 
+        m.id
+      ).update.apply()
     }
   }
 
@@ -188,5 +190,3 @@ object Member {
 
 }
 ```
-
-

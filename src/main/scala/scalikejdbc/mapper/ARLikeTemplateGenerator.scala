@@ -162,10 +162,10 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
                 case allColumns =>
                   (" " * 6) + "val m = new " + className(table) + lineBreak +
                     table.autoIncrementColumns.map {
-                      c => (" " * 8) + "m." + columnName(c) + " = generatedKey"
+                      c => (" " * 6) + "m." + columnName(c) + " = generatedKey"
                     }.mkString(lineBreak) + lineBreak +
                     createColumns.map {
-                      c => (" " * 8) + "m." + columnName(c) + " = " + columnName(c)
+                      c => (" " * 6) + "m." + columnName(c) + " = " + columnName(c)
                     }.mkString(lineBreak) + lineBreak +
                     (" " * 6) + "m" + lineBreak
               })
@@ -177,7 +177,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       (" " * 2) + "def save(m: " + className(table) + "): Unit = {" + lineBreak +
         (" " * 4) + "DB localTx { implicit session =>" + lineBreak +
         (" " * 6) + "SQL(\"\"\"" + lineBreak +
-        (" " * 8) + "UPDATE " + table.name + " SET " + lineBreak +
+        (" " * 8) + "UPDATE " + lineBreak +
+        (" " * 10) + table.name + lineBreak +
+        (" " * 8) + "SET " + lineBreak +
         allColumns.map(c => (" " * 10) + c.name + " = ?").mkString("," + lineBreak) + lineBreak +
         (" " * 8) + "WHERE " + lineBreak +
         pkColumns.map(pk => (" " * 10) + pk.name + " = ?").mkString(" AND ") + lineBreak +
