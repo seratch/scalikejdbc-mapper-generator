@@ -1,14 +1,14 @@
 package com.example
 
 import scalikejdbc._
-import java.util.Date
+import org.joda.time.{ LocalDate, DateTime }
 
 case class Member(
     id: Long,
     name: String,
     description: Option[String] = None,
-    birthday: Option[Date] = None,
-    createdAt: Date) {
+    birthday: Option[LocalDate] = None,
+    createdAt: DateTime) {
 
   def save(): Unit = Member.save(this)
 
@@ -18,12 +18,27 @@ case class Member(
 
 object Member {
 
-  val * = (rs: WrappedResultSet) => Member(
-    id = rs.long("MEMBER.ID"),
-    name = rs.string("MEMBER.NAME"),
-    description = Option(rs.string("MEMBER.DESCRIPTION")),
-    birthday = Option(rs.date("MEMBER.BIRTHDAY")).map(_.toJavaUtilDate),
-    createdAt = rs.timestamp("MEMBER.CREATED_AT").toJavaUtilDate)
+  val tableName = "MEMBER"
+
+  object columnNames {
+    val id = "ID"
+    val name = "NAME"
+    val description = "DESCRIPTION"
+    val birthday = "BIRTHDAY"
+    val createdAt = "CREATED_AT"
+    val all = Seq(id, name, description, birthday, createdAt)
+  }
+
+  val * = {
+    import columnNames._
+    def label(columnName: String) = tableName + "." + columnName
+    (rs: WrappedResultSet) => Member(
+      id = rs.long(label(id)),
+      name = rs.string(label(name)),
+      description = Option(rs.string(label(description))),
+      birthday = Option(rs.date(label(birthday))).map(_.toLocalDate),
+      createdAt = rs.timestamp(label(createdAt)).toDateTime)
+  }
 
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>
@@ -62,8 +77,8 @@ object Member {
   def create(
     name: String,
     description: Option[String] = None,
-    birthday: Option[Date] = None,
-    createdAt: Date): Member = {
+    birthday: Option[LocalDate] = None,
+    createdAt: DateTime): Member = {
     DB localTx { implicit session =>
       val generatedKey = SQL("""
         INSERT INTO MEMBER (

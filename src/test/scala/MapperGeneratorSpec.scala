@@ -6,14 +6,14 @@ import mapper.{ GeneratorConfig, ARLikeTemplateGenerator, Model }
 
 class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
 
-  Class.forName("org.hsqldb.jdbc.JDBCDriver")
+  Class.forName("org.h2.Driver")
 
-  val url = "jdbc:hsqldb:file:db/test"
+  val url = "jdbc:h2:file:db/test"
   val username = "sa"
   val password = ""
+  ConnectionPool.singleton(url, username, password)
 
   it should "work fine with member" in {
-    ConnectionPool.singleton(url, username, password)
     DB autoCommit { implicit session =>
       try {
         SQL("select count(1) from member").map(rs => rs).list.apply()
@@ -44,12 +44,13 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
     } getOrElse {
       fail("The table is not found.")
     }
-    Thread.sleep(1000)
+    Thread.sleep(1500)
   }
 
   it should "work fine with large table" in {
-    Class.forName("org.hsqldb.jdbc.JDBCDriver")
-    ConnectionPool.singleton("jdbc:hsqldb:file:db/test", "sa", "")
+
+    Thread.sleep(500)
+
     DB autoCommit { implicit session =>
       try {
         SQL("select count(1) from un_normalized").map(rs => rs).list.apply()
@@ -102,6 +103,6 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
       fail("The table is not found.")
     }
 
-    Thread.sleep(1000)
+    Thread.sleep(1500)
   }
 }

@@ -36,7 +36,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val ByteArray = "Array[Byte]"
     val Long = "Long"
     val Boolean = "Boolean"
-    val Date = "Date"
+    val DateTime = "DateTime"
+    val LocalDate = "LocalDate"
+    val LocalTime = "LocalTime"
     val String = "String"
     val Byte = "Byte"
     val Int = "Int"
@@ -72,7 +74,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       case JavaSqlTypes.CHAR => TypeName.String
       case JavaSqlTypes.CLOB => TypeName.Clob
       case JavaSqlTypes.DATALINK => TypeName.Any
-      case JavaSqlTypes.DATE => TypeName.Date
+      case JavaSqlTypes.DATE => TypeName.LocalDate
       case JavaSqlTypes.DECIMAL => TypeName.BigDecimal
       case JavaSqlTypes.DISTINCT => TypeName.Any
       case JavaSqlTypes.DOUBLE => TypeName.Double
@@ -88,8 +90,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       case JavaSqlTypes.REF => TypeName.Ref
       case JavaSqlTypes.SMALLINT => TypeName.Short
       case JavaSqlTypes.STRUCT => TypeName.Struct
-      case JavaSqlTypes.TIME => TypeName.Date
-      case JavaSqlTypes.TIMESTAMP => TypeName.Date
+      case JavaSqlTypes.TIME => TypeName.LocalTime
+      case JavaSqlTypes.TIMESTAMP => TypeName.DateTime
       case JavaSqlTypes.TINYINT => TypeName.Byte
       case JavaSqlTypes.VARBINARY => TypeName.ByteArray
       case JavaSqlTypes.VARCHAR => TypeName.String
@@ -194,14 +196,26 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val allColumns = table.allColumns
     val pkColumns = table.primaryKeyColumns
 
+    val tableName = 1.indent + "val tableName = \"" + table.name + "\"" + eol
+
+    val columnNames = {
+      1.indent + "object columnNames {" + eol +
+        allColumns.map { c => 2.indent + "val " + c.nameInScala + " = \"" + c.name + "\"" }.mkString(eol) + eol +
+        2.indent + "val all = Seq(" + allColumns.map { c => c.nameInScala }.mkString(", ") + ")" + eol +
+        1.indent + "}" + eol
+    }
+
     val mapper = {
-      val prefix = table.name + "."
-      1.indent + "val * = (rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
+      1.indent + "val * = {" + eol +
+        2.indent + "import columnNames._" + eol +
+        2.indent + "def label(columnName: String) = tableName + \".\" + columnName" + eol +
+        2.indent + "(rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
         allColumns.map {
           c =>
-            if (c.isNotNull) 2.indent + c.nameInScala + " = rs." + c.extractorName + "(\"" + prefix + c.name + "\")" + cast(c, false)
-            else 2.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(\"" + prefix + c.name + "\")" + cast(c, true) + ")"
-        }.mkString(comma + eol) + ")" + eol
+            if (c.isNotNull) 3.indent + c.nameInScala + " = rs." + c.extractorName + "(label(" + c.nameInScala + "))" + cast(c, false)
+            else 3.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(label(" + c.nameInScala + "))" + cast(c, true) + ")"
+        }.mkString(comma + eol) + ")" + eol +
+        1.indent + "}" + eol
     }
 
     val createColumns = allColumns.filterNot {
@@ -322,6 +336,10 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
 
     "object " + className + " {" + eol +
       eol +
+      tableName +
+      eol +
+      columnNames +
+      eol +
       mapper +
       eol +
       findMethod +
@@ -344,8 +362,16 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
   }
 
   def generateAll(): String = {
-    val dateImport = table.allColumns.find(c => c.typeInScala == TypeName.Date) match {
-      case Some(c) => "import java.util.Date" + eol
+    val jodaTimeImport = table.allColumns.flatMap {
+      c =>
+        c.rawTypeInScala match {
+          case TypeName.DateTime => Some("DateTime")
+          case TypeName.LocalDate => Some("LocalDate")
+          case TypeName.LocalTime => Some("LocalTime")
+          case _ => None
+        }
+    } match {
+      case classes if classes.size > 0 => "import org.joda.time.{" + classes.distinct.mkString(", ") + "}" + eol
       case _ => ""
     }
     val javaSqlImport = table.allColumns.flatMap {
@@ -358,13 +384,13 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
           case _ => None
         }
     } match {
-      case classes if classes.size > 0 => "import java.sql.{" + classes.mkString(", ") + "}" + eol
+      case classes if classes.size > 0 => "import java.sql.{" + classes.distinct.mkString(", ") + "}" + eol
       case _ => ""
     }
     "package " + config.packageName + eol +
       eol +
       "import scalikejdbc._" + eol +
-      dateImport +
+      jodaTimeImport +
       javaSqlImport +
       eol +
       classPart + eol +
@@ -373,13 +399,13 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
   }
 
   private def cast(column: Column, optional: Boolean): String = column.dataType match {
-    case JavaSqlTypes.DATE if optional => ").map(_.toJavaUtilDate"
-    case JavaSqlTypes.DATE => ".toJavaUtilDate"
+    case JavaSqlTypes.DATE if optional => ").map(_.toLocalDate"
+    case JavaSqlTypes.DATE => ".toLocalDate"
     case JavaSqlTypes.STRUCT => ".asInstanceOf[Struct]"
-    case JavaSqlTypes.TIME if optional => ").map(_.toJavaUtilDate"
-    case JavaSqlTypes.TIME => ".toJavaUtilDate"
-    case JavaSqlTypes.TIMESTAMP if optional => ").map(_.toJavaUtilDate"
-    case JavaSqlTypes.TIMESTAMP => ".toJavaUtilDate"
+    case JavaSqlTypes.TIME if optional => ").map(_.toLocalTime"
+    case JavaSqlTypes.TIME => ".toLocalTime"
+    case JavaSqlTypes.TIMESTAMP if optional => ").map(_.toDateTime"
+    case JavaSqlTypes.TIMESTAMP => ".toDateTime"
     case _ => ""
   }
 
