@@ -187,8 +187,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         1.indent + "def copy(" + eol +
         table.allColumns.map {
           c =>
-            2.indent + c.nameInScala + ": " + c.typeInScala +
-              (if (c.isNotNull) "" else " = None")
+            2.indent + c.nameInScala + ": " + c.typeInScala + " = this." + c.nameInScala
         }.mkString(comma + eol) + "): " + className + " = {" + eol +
         2.indent + "new " + className + "(" + eol +
         table.allColumns.map {
