@@ -184,6 +184,19 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
               (if (c.isNotNull) "" else " = None")
         }.mkString(comma + eol) + ") { " + eol +
         eol +
+        1.indent + "def copy(" + eol +
+        table.allColumns.map {
+          c =>
+            2.indent + c.nameInScala + ": " + c.typeInScala +
+              (if (c.isNotNull) "" else " = None")
+        }.mkString(comma + eol) + "): " + className + " = {" + eol +
+        2.indent + "new " + className + "(" + eol +
+        table.allColumns.map {
+          c => 3.indent + c.nameInScala + " = " + c.nameInScala
+        }.mkString(comma + eol) + eol +
+        2.indent + ")" + eol +
+        1.indent + "}" + eol +
+        eol +
         1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
         eol +
         1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +

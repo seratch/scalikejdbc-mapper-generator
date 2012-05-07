@@ -32,6 +32,63 @@ class UnNormalized(
     val v24: Double,
     val createdAt: DateTime) {
 
+  def copy(
+    id: Long,
+    v01: Byte,
+    v02: Short,
+    v03: Int,
+    v04: Long,
+    v05: BigDecimal,
+    v06: BigDecimal,
+    v07: Double,
+    v08: Boolean,
+    v09: Option[String] = None,
+    v10: String,
+    v11: Option[Clob] = None,
+    v12: Option[String] = None,
+    v13: Array[Byte],
+    v14: Array[Byte],
+    v15: Option[Blob] = None,
+    v16: Boolean,
+    v17: LocalDate,
+    v18: LocalTime,
+    v19: LocalTime,
+    v20: DateTime,
+    v21: Any,
+    v22: Boolean,
+    v23: Float,
+    v24: Double,
+    createdAt: DateTime): UnNormalized = {
+    new UnNormalized(
+      id = id,
+      v01 = v01,
+      v02 = v02,
+      v03 = v03,
+      v04 = v04,
+      v05 = v05,
+      v06 = v06,
+      v07 = v07,
+      v08 = v08,
+      v09 = v09,
+      v10 = v10,
+      v11 = v11,
+      v12 = v12,
+      v13 = v13,
+      v14 = v14,
+      v15 = v15,
+      v16 = v16,
+      v17 = v17,
+      v18 = v18,
+      v19 = v19,
+      v20 = v20,
+      v21 = v21,
+      v22 = v22,
+      v23 = v23,
+      v24 = v24,
+      createdAt = createdAt
+    )
+  }
+
   def save(): Unit = UnNormalized.save(this)
 
   def destroy(): Unit = UnNormalized.delete(this)
