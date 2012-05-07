@@ -220,12 +220,11 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val mapper = {
       1.indent + "val * = {" + eol +
         2.indent + "import columnNames._" + eol +
-        2.indent + "def label(columnName: String) = tableName + \".\" + columnName" + eol +
         2.indent + "(rs: WrappedResultSet) => " + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
         allColumns.map {
           c =>
-            if (c.isNotNull) 3.indent + c.nameInScala + " = rs." + c.extractorName + "(label(" + c.nameInScala + "))" + cast(c, false)
-            else 3.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(label(" + c.nameInScala + "))" + cast(c, true) + ")"
+            if (c.isNotNull) 3.indent + c.nameInScala + " = rs." + c.extractorName + "(" + c.nameInScala + ")" + cast(c, false)
+            else 3.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(" + c.nameInScala + ")" + cast(c, true) + ")"
         }.mkString(comma + eol) + ")" + eol +
         1.indent + "}" + eol
     }
