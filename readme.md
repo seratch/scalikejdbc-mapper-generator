@@ -93,15 +93,14 @@ object Member {
 
   val * = {
     import columnNames._
-    def label(columnName: String) = tableName + "." + columnName
     (rs: WrappedResultSet) => Member(
-      id = rs.long(label(id)),
-      name = rs.string(label(name)),
-      description = Option(rs.string(label(description))),
-      birthday = Option(rs.date(label(birthday))).map(_.toLocalDate),
-      createdAt = rs.timestamp(label(createdAt)).toDateTime)
+      id = rs.long(id),
+      name = rs.string(name),
+      description = Option(rs.string(description)),
+      birthday = Option(rs.date(birthday)).map(_.toLocalDate),
+      createdAt = rs.timestamp(createdAt).toDateTime)
   }
-
+  
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM MEMBER WHERE ID = ?""")
