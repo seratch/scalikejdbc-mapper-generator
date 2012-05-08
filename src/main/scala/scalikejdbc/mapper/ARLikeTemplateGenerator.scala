@@ -224,7 +224,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         allColumns.map {
           c =>
             if (c.isNotNull) 3.indent + c.nameInScala + " = rs." + c.extractorName + "(" + c.nameInScala + ")" + cast(c, false)
-            else 3.indent + c.nameInScala + " = Option(rs." + c.extractorName + "(" + c.nameInScala + ")" + cast(c, true) + ")"
+            else 3.indent + c.nameInScala + " = " + toOption(c) + "(rs." + c.extractorName + "(" + c.nameInScala + ")" + cast(c, true) + ")"
         }.mkString(comma + eol) + ")" + eol +
         1.indent + "}" + eol
     }
@@ -409,21 +409,27 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       objectPart + eol
   }
 
+  private def toOption(column: Column): String = column.dataType match {
+    case JavaSqlTypes.BIGINT |
+      JavaSqlTypes.BIT |
+      JavaSqlTypes.BOOLEAN |
+      JavaSqlTypes.DOUBLE |
+      JavaSqlTypes.FLOAT |
+      JavaSqlTypes.REAL |
+      JavaSqlTypes.INTEGER |
+      JavaSqlTypes.SMALLINT |
+      JavaSqlTypes.TINYINT => "opt[" + column.rawTypeInScala + "]"
+    case _ => "Option"
+  }
+
   private def cast(column: Column, optional: Boolean): String = column.dataType match {
-    case JavaSqlTypes.BIGINT if optional => ".asInstanceOf[Long]"
-    case JavaSqlTypes.BIT | JavaSqlTypes.BOOLEAN if optional => ".asInstanceOf[Boolean]"
     case JavaSqlTypes.DATE if optional => ").map(_.toLocalDate"
     case JavaSqlTypes.DATE => ".toLocalDate"
     case JavaSqlTypes.DECIMAL => ".toScalaBigDecimal"
-    case JavaSqlTypes.DOUBLE if optional => ".asInstanceOf[Double]"
-    case JavaSqlTypes.FLOAT | JavaSqlTypes.REAL if optional => ".asInstanceOf[Float]"
-    case JavaSqlTypes.INTEGER if optional => ".asInstanceOf[Int]"
-    case JavaSqlTypes.SMALLINT if optional => ".asInstanceOf[Short]"
     case JavaSqlTypes.TIME if optional => ").map(_.toLocalTime"
     case JavaSqlTypes.TIME => ".toLocalTime"
     case JavaSqlTypes.TIMESTAMP if optional => ").map(_.toDateTime"
     case JavaSqlTypes.TIMESTAMP => ".toDateTime"
-    case JavaSqlTypes.TINYINT if optional => ".asInstanceOf[Byte]"
     case _ => ""
   }
 
