@@ -9,7 +9,7 @@ object MyBuild extends Build {
     sbtPlugin := true,
     organization := "com.github.seratch",
     name := "scalikejdbc-mapper-generator",
-    version := "0.1.1-SNAPSHOT",
+    version := "1.0.0-SNAPSHOT",
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
         if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
