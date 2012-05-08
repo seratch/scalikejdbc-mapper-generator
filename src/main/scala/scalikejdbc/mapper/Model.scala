@@ -25,7 +25,7 @@ case class Model(url: String, username: String, password: String) {
 
   private def columnName(implicit rs: WrappedResultSet): String = rs.string("COLUMN_NAME")
 
-  private def columnDataType(implicit rs: WrappedResultSet): Int = rs.int("DATA_TYPE")
+  private def columnDataType(implicit rs: WrappedResultSet): Int = rs.string("DATA_TYPE").toInt
 
   private def isNotNull(implicit rs: WrappedResultSet): Boolean = rs.string("IS_NULLABLE") == "NO"
 
