@@ -410,14 +410,20 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
   }
 
   private def cast(column: Column, optional: Boolean): String = column.dataType match {
-    case JavaSqlTypes.DECIMAL => ".toScalaBigDecimal"
+    case JavaSqlTypes.BIGINT if optional => ".asInstanceOf[Long]"
+    case JavaSqlTypes.BIT | JavaSqlTypes.BOOLEAN if optional => ".asInstanceOf[Boolean]"
     case JavaSqlTypes.DATE if optional => ").map(_.toLocalDate"
     case JavaSqlTypes.DATE => ".toLocalDate"
-    case JavaSqlTypes.STRUCT => ".asInstanceOf[Struct]"
+    case JavaSqlTypes.DECIMAL => ".toScalaBigDecimal"
+    case JavaSqlTypes.DOUBLE if optional => ".asInstanceOf[Double]"
+    case JavaSqlTypes.FLOAT | JavaSqlTypes.REAL if optional => ".asInstanceOf[Float]"
+    case JavaSqlTypes.INTEGER if optional => ".asInstanceOf[Int]"
+    case JavaSqlTypes.SMALLINT if optional => ".asInstanceOf[Short]"
     case JavaSqlTypes.TIME if optional => ").map(_.toLocalTime"
     case JavaSqlTypes.TIME => ".toLocalTime"
     case JavaSqlTypes.TIMESTAMP if optional => ").map(_.toDateTime"
     case JavaSqlTypes.TIMESTAMP => ".toDateTime"
+    case JavaSqlTypes.TINYINT if optional => ".asInstanceOf[Byte]"
     case _ => ""
   }
 
