@@ -5,12 +5,12 @@
 ### project/plugins.sbt
 
 ```
-resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
+resolvers += "Sonatype OSS" at "http://oss.sonatype.org/content/repositories/releases"
 
 // Don't forget adding your JDBC driver
 libraryDependencies += "org.hsqldb" % "hsqldb" % "[2,)"
 
-addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.0.0")
+addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.0.1")
 ```
 
 ### build.sbt
