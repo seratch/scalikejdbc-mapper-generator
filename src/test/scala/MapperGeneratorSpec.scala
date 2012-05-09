@@ -112,4 +112,36 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
 
     Thread.sleep(1500)
   }
+
+  it should "work fine with without_pk" in {
+    DB autoCommit { implicit session =>
+      try {
+        SQL("select count(1) from without_pk").map(rs => rs).list.apply()
+      } catch {
+        case e =>
+          e.printStackTrace()
+          SQL("""
+            create table without_pk (
+              aaa varchar(30) not null,
+              bbb int,
+              created_at timestamp not null
+            )
+            """).execute.apply()
+      }
+    }
+
+    Model(url, username, password).table(null, "WITHOUT_PK").map {
+      table =>
+        val generator = ARLikeTemplateGenerator(table)(GeneratorConfig(
+          srcDir = "src/test/scala",
+          packageName = "com.example"
+        ))
+        println(generator.generateAll())
+        generator.writeFileIfNotExist()
+    } getOrElse {
+      fail("The table is not found.")
+    }
+    Thread.sleep(1500)
+  }
+
 }

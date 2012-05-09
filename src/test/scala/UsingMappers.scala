@@ -48,4 +48,11 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
     UnNormalized.find(created.id).get.v07 should equal(7.0D)
   }
 
+  it should "work fine with WithoutPk" in {
+    val one = WithoutPk.create(aaa = "aaa", bbb = Some(123), createdAt = new DateTime)
+    one.save()
+    println(WithoutPk.countAll())
+    one.destroy()
+  }
+
 }

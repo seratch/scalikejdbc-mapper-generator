@@ -206,7 +206,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
 
   def objectPart: String = {
     val allColumns = table.allColumns
-    val pkColumns = table.primaryKeyColumns
+    val pkColumns = if (table.primaryKeyColumns.size == 0) allColumns else table.primaryKeyColumns
 
     val tableName = 1.indent + "val tableName = \"" + table.name + "\"" + eol
 
@@ -289,7 +289,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         4.indent + "SET " + eol +
         allColumns.map(c => 5.indent + c.name + " = ?").mkString(comma + eol) + eol +
         4.indent + "WHERE " + eol +
-        pkColumns.map(pk => 5.indent + pk.name + " = ?").mkString(" AND ") + eol +
+        5.indent + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ") + eol +
         3.indent + "\"\"\")" + eol +
         3.indent + ".bind(" + eol +
         allColumns.map(c => 4.indent + "m." + c.nameInScala).mkString(comma + eol) + ", " + eol +
