@@ -6,7 +6,7 @@ scalaVersion := "2.9.1"
 
 resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases/"
 
-resolvers += "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+//resolvers += "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
