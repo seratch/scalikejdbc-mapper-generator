@@ -57,7 +57,7 @@ create table member (
 This tool will generate the following Scala source code:
 
 ```scala
-package com.example
+package com.example.models
 
 import scalikejdbc._
 import org.joda.time.{LocalDate, DateTime}
