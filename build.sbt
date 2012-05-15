@@ -11,7 +11,7 @@ resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/release
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 libraryDependencies ++= Seq(
-  "com.github.seratch" %% "scalikejdbc" % "[1.0,)",
+  "com.github.seratch" %% "scalikejdbc" % "1.1.0",
   "ch.qos.logback" % "logback-classic" % "1.0.2",
   "com.h2database" % "h2" % "[1.3,)" % "test",
   "org.scalatest" %% "scalatest" % "[1.7,)" % "test"

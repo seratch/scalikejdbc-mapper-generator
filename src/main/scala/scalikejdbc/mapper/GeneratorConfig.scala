@@ -16,7 +16,29 @@
 package scalikejdbc.mapper
 
 case class GeneratorConfig(srcDir: String = "src/main/scala",
+  testDir: String = "src/test/scala",
   packageName: String = "models",
-  lineBreak: String = "\n",
+  template: GeneratorTemplate = GeneratorTemplate("executableSQL"),
+  lineBreak: LineBreak = LineBreak("\n"),
   encoding: String = "UTF-8")
+
+object GeneratorTemplate {
+  val execautableSQL = GeneratorTemplate("executableSQL")
+  val placeHolderSQL = GeneratorTemplate("placeHolderSQL")
+}
+
+case class GeneratorTemplate(name: String)
+
+object LineBreak {
+  def value(name: String) = name match {
+    case "CR" => "\r"
+    case "LF" => "\n"
+    case "CRLF" => "\r\n"
+    case _ => "\n"
+  }
+}
+
+case class LineBreak(name: String) {
+  def value = LineBreak.value(name)
+}
 

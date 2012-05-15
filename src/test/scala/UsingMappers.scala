@@ -17,7 +17,7 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
   it should "work fine with Member" in {
     Member.create("Alice" + System.currentTimeMillis, Some("Example"), None, new org.joda.time.DateTime)
     Member.findAll() foreach println
-    Member.findBy(Member.columnNames.description + " = ?", "Example") foreach println
+    Member.findBy(Member.columnNames.description + " = /*'description*/'aaa'", 'description -> "Example") foreach println
   }
 
   it should "work fine with UnNormalized" in {

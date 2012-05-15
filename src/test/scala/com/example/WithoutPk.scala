@@ -8,7 +8,7 @@ case class WithoutPk(
     bbb: Option[Int] = None,
     createdAt: DateTime) {
 
-  def save(): Unit = WithoutPk.save(this)
+  def save(): WithoutPk = WithoutPk.save(this)
 
   def destroy(): Unit = WithoutPk.delete(this)
 
@@ -35,8 +35,8 @@ object WithoutPk {
 
   def find(aaa: String, bbb: Option[Int], createdAt: DateTime): Option[WithoutPk] = {
     DB readOnly { implicit session =>
-      SQL("""SELECT * FROM WITHOUT_PK WHERE AAA = ? AND BBB = ? AND CREATED_AT = ?""")
-        .bind(aaa, bbb, createdAt).map(*).single.apply()
+      SQL("""SELECT * FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
+        .bindByName('aaa -> aaa, 'bbb -> bbb, 'createdAt -> createdAt).map(*).single.apply()
     }
   }
 
@@ -53,17 +53,17 @@ object WithoutPk {
     }
   }
 
-  def findBy(where: String, params: Any*): List[WithoutPk] = {
+  def findBy(where: String, params: (Symbol, Any)*): List[WithoutPk] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM WITHOUT_PK WHERE """ + where)
-        .bind(params: _*).map(*).list.apply()
+        .bindByName(params: _*).map(*).list.apply()
     }
   }
 
-  def countBy(where: String, params: Any*): Long = {
+  def countBy(where: String, params: (Symbol, Any)*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM WITHOUT_PK WHERE """ + where)
-        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
+        .bindByName(params: _*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -78,15 +78,15 @@ object WithoutPk {
           BBB,
           CREATED_AT
         ) VALUES (
-          ?,
-          ?,
-          ?
+          /*'aaa*/'abc',
+          /*'bbb*/1,
+          /*'createdAt*/'1958-09-06 12:00:00'
         )
       """)
-        .bind(
-          aaa,
-          bbb,
-          createdAt
+        .bindByName(
+          'aaa -> aaa,
+          'bbb -> bbb,
+          'createdAt -> createdAt
         ).update.apply()
       WithoutPk(
         aaa = aaa,
@@ -95,33 +95,31 @@ object WithoutPk {
     }
   }
 
-  def save(m: WithoutPk): Unit = {
+  def save(m: WithoutPk): WithoutPk = {
     DB localTx { implicit session =>
       SQL("""
         UPDATE 
           WITHOUT_PK
         SET 
-          AAA = ?,
-          BBB = ?,
-          CREATED_AT = ?
+          AAA = /*'aaa*/'abc',
+          BBB = /*'bbb*/1,
+          CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
         WHERE 
-          AAA = ? AND BBB = ? AND CREATED_AT = ?
+          AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
       """)
-        .bind(
-          m.aaa,
-          m.bbb,
-          m.createdAt,
-          m.aaa,
-          m.bbb,
-          m.createdAt
+        .bindByName(
+          'aaa -> m.aaa,
+          'bbb -> m.bbb,
+          'createdAt -> m.createdAt
         ).update.apply()
+      m
     }
   }
 
   def delete(m: WithoutPk): Unit = {
     DB localTx { implicit session =>
-      SQL("""DELETE FROM WITHOUT_PK WHERE AAA = ? AND BBB = ? AND CREATED_AT = ?""")
-        .bind(m.aaa, m.bbb, m.createdAt).update.apply()
+      SQL("""DELETE FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
+        .bindByName('aaa -> m.aaa, 'bbb -> m.bbb, 'createdAt -> m.createdAt).update.apply()
     }
   }
 

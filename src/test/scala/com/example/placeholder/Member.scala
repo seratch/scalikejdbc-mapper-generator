@@ -1,4 +1,4 @@
-package com.example
+package com.example.placeholder
 
 import scalikejdbc._
 import org.joda.time.{ LocalDate, DateTime }
@@ -41,8 +41,8 @@ object Member {
 
   def find(id: Long): Option[Member] = {
     DB readOnly { implicit session =>
-      SQL("""SELECT * FROM MEMBER WHERE ID = /*'id*/1""")
-        .bindByName('id -> id).map(*).single.apply()
+      SQL("""SELECT * FROM MEMBER WHERE ID = ?""")
+        .bind(id).map(*).single.apply()
     }
   }
 
@@ -59,17 +59,17 @@ object Member {
     }
   }
 
-  def findBy(where: String, params: (Symbol, Any)*): List[Member] = {
+  def findBy(where: String, params: Any*): List[Member] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM MEMBER WHERE """ + where)
-        .bindByName(params: _*).map(*).list.apply()
+        .bind(params: _*).map(*).list.apply()
     }
   }
 
-  def countBy(where: String, params: (Symbol, Any)*): Long = {
+  def countBy(where: String, params: Any*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM MEMBER WHERE """ + where)
-        .bindByName(params: _*).map(rs => rs.long(1)).single.apply().get
+        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -86,17 +86,17 @@ object Member {
           BIRTHDAY,
           CREATED_AT
         ) VALUES (
-          /*'name*/'abc',
-          /*'description*/'abc',
-          /*'birthday*/'1958-09-06',
-          /*'createdAt*/'1958-09-06 12:00:00'
+          ?,
+          ?,
+          ?,
+          ?
         )
       """)
-        .bindByName(
-          'name -> name,
-          'description -> description,
-          'birthday -> birthday,
-          'createdAt -> createdAt
+        .bind(
+          name,
+          description,
+          birthday,
+          createdAt
         ).updateAndReturnGeneratedKey.apply()
       Member(
         id = generatedKey,
@@ -114,20 +114,21 @@ object Member {
         UPDATE 
           MEMBER
         SET 
-          ID = /*'id*/1,
-          NAME = /*'name*/'abc',
-          DESCRIPTION = /*'description*/'abc',
-          BIRTHDAY = /*'birthday*/'1958-09-06',
-          CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
+          ID = ?,
+          NAME = ?,
+          DESCRIPTION = ?,
+          BIRTHDAY = ?,
+          CREATED_AT = ?
         WHERE 
-          ID = /*'id*/1
+          ID = ?
       """)
-        .bindByName(
-          'id -> m.id,
-          'name -> m.name,
-          'description -> m.description,
-          'birthday -> m.birthday,
-          'createdAt -> m.createdAt
+        .bind(
+          m.id,
+          m.name,
+          m.description,
+          m.birthday,
+          m.createdAt,
+          m.id
         ).update.apply()
       m
     }
@@ -135,8 +136,8 @@ object Member {
 
   def delete(m: Member): Unit = {
     DB localTx { implicit session =>
-      SQL("""DELETE FROM MEMBER WHERE ID = /*'id*/1""")
-        .bindByName('id -> m.id).update.apply()
+      SQL("""DELETE FROM MEMBER WHERE ID = ?""")
+        .bind(m.id).update.apply()
     }
   }
 

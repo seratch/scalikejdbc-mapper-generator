@@ -88,7 +88,7 @@ class UnNormalized(
     )
   }
 
-  def save(): Unit = UnNormalized.save(this)
+  def save(): UnNormalized = UnNormalized.save(this)
 
   def destroy(): Unit = UnNormalized.delete(this)
 
@@ -161,8 +161,8 @@ object UnNormalized {
 
   def find(id: Long): Option[UnNormalized] = {
     DB readOnly { implicit session =>
-      SQL("""SELECT * FROM UN_NORMALIZED WHERE ID = ?""")
-        .bind(id).map(*).single.apply()
+      SQL("""SELECT * FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
+        .bindByName('id -> id).map(*).single.apply()
     }
   }
 
@@ -179,17 +179,17 @@ object UnNormalized {
     }
   }
 
-  def findBy(where: String, params: Any*): List[UnNormalized] = {
+  def findBy(where: String, params: (Symbol, Any)*): List[UnNormalized] = {
     DB readOnly { implicit session =>
       SQL("""SELECT * FROM UN_NORMALIZED WHERE """ + where)
-        .bind(params: _*).map(*).list.apply()
+        .bindByName(params: _*).map(*).list.apply()
     }
   }
 
-  def countBy(where: String, params: Any*): Long = {
+  def countBy(where: String, params: (Symbol, Any)*): Long = {
     DB readOnly { implicit session =>
       SQL("""SELECT count(1) FROM UN_NORMALIZED WHERE """ + where)
-        .bind(params: _*).map(rs => rs.long(1)).single.apply().get
+        .bindByName(params: _*).map(rs => rs.long(1)).single.apply().get
     }
   }
 
@@ -248,59 +248,59 @@ object UnNormalized {
           V_24,
           CREATED_AT
         ) VALUES (
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?
+          /*'v01*/1,
+          /*'v02*/1,
+          /*'v03*/1,
+          /*'v04*/1,
+          /*'v05*/1,
+          /*'v06*/1,
+          /*'v07*/0.1,
+          /*'v08*/boolean,
+          /*'v09*/'abc',
+          /*'v10*/'abc',
+          /*'v11*/1,
+          /*'v12*/1,
+          /*'v13*/1,
+          /*'v14*/1,
+          /*'v15*/1,
+          /*'v16*/boolean,
+          /*'v17*/'1958-09-06',
+          /*'v18*/'12:00:00',
+          /*'v19*/'12:00:00',
+          /*'v20*/'1958-09-06 12:00:00',
+          /*'v21*/null,
+          /*'v22*/boolean,
+          /*'v23*/null,
+          /*'v24*/0.1,
+          /*'createdAt*/'1958-09-06 12:00:00'
         )
       """)
-        .bind(
-          v01,
-          v02,
-          v03,
-          v04,
-          v05,
-          v06,
-          v07,
-          v08,
-          v09,
-          v10,
-          v11,
-          v12,
-          v13,
-          v14,
-          v15,
-          v16,
-          v17,
-          v18,
-          v19,
-          v20,
-          v21,
-          v22,
-          v23,
-          v24,
-          createdAt
+        .bindByName(
+          'v01 -> v01,
+          'v02 -> v02,
+          'v03 -> v03,
+          'v04 -> v04,
+          'v05 -> v05,
+          'v06 -> v06,
+          'v07 -> v07,
+          'v08 -> v08,
+          'v09 -> v09,
+          'v10 -> v10,
+          'v11 -> v11,
+          'v12 -> v12,
+          'v13 -> v13,
+          'v14 -> v14,
+          'v15 -> v15,
+          'v16 -> v16,
+          'v17 -> v17,
+          'v18 -> v18,
+          'v19 -> v19,
+          'v20 -> v20,
+          'v21 -> v21,
+          'v22 -> v22,
+          'v23 -> v23,
+          'v24 -> v24,
+          'createdAt -> createdAt
         ).updateAndReturnGeneratedKey.apply()
       new UnNormalized(
         id = generatedKey,
@@ -333,79 +333,78 @@ object UnNormalized {
     }
   }
 
-  def save(m: UnNormalized): Unit = {
+  def save(m: UnNormalized): UnNormalized = {
     DB localTx { implicit session =>
       SQL("""
         UPDATE 
           UN_NORMALIZED
         SET 
-          ID = ?,
-          V_01 = ?,
-          V_02 = ?,
-          V_03 = ?,
-          V_04 = ?,
-          V_05 = ?,
-          V_06 = ?,
-          V_07 = ?,
-          V_08 = ?,
-          V_09 = ?,
-          V_10 = ?,
-          V_11 = ?,
-          V_12 = ?,
-          V_13 = ?,
-          V_14 = ?,
-          V_15 = ?,
-          V_16 = ?,
-          V_17 = ?,
-          V_18 = ?,
-          V_19 = ?,
-          V_20 = ?,
-          V_21 = ?,
-          V_22 = ?,
-          V_23 = ?,
-          V_24 = ?,
-          CREATED_AT = ?
+          ID = /*'id*/1,
+          V_01 = /*'v01*/1,
+          V_02 = /*'v02*/1,
+          V_03 = /*'v03*/1,
+          V_04 = /*'v04*/1,
+          V_05 = /*'v05*/1,
+          V_06 = /*'v06*/1,
+          V_07 = /*'v07*/0.1,
+          V_08 = /*'v08*/boolean,
+          V_09 = /*'v09*/'abc',
+          V_10 = /*'v10*/'abc',
+          V_11 = /*'v11*/1,
+          V_12 = /*'v12*/1,
+          V_13 = /*'v13*/1,
+          V_14 = /*'v14*/1,
+          V_15 = /*'v15*/1,
+          V_16 = /*'v16*/boolean,
+          V_17 = /*'v17*/'1958-09-06',
+          V_18 = /*'v18*/'12:00:00',
+          V_19 = /*'v19*/'12:00:00',
+          V_20 = /*'v20*/'1958-09-06 12:00:00',
+          V_21 = /*'v21*/null,
+          V_22 = /*'v22*/boolean,
+          V_23 = /*'v23*/null,
+          V_24 = /*'v24*/0.1,
+          CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
         WHERE 
-          ID = ?
+          ID = /*'id*/1
       """)
-        .bind(
-          m.id,
-          m.v01,
-          m.v02,
-          m.v03,
-          m.v04,
-          m.v05,
-          m.v06,
-          m.v07,
-          m.v08,
-          m.v09,
-          m.v10,
-          m.v11,
-          m.v12,
-          m.v13,
-          m.v14,
-          m.v15,
-          m.v16,
-          m.v17,
-          m.v18,
-          m.v19,
-          m.v20,
-          m.v21,
-          m.v22,
-          m.v23,
-          m.v24,
-          m.createdAt,
-          m.id
+        .bindByName(
+          'id -> m.id,
+          'v01 -> m.v01,
+          'v02 -> m.v02,
+          'v03 -> m.v03,
+          'v04 -> m.v04,
+          'v05 -> m.v05,
+          'v06 -> m.v06,
+          'v07 -> m.v07,
+          'v08 -> m.v08,
+          'v09 -> m.v09,
+          'v10 -> m.v10,
+          'v11 -> m.v11,
+          'v12 -> m.v12,
+          'v13 -> m.v13,
+          'v14 -> m.v14,
+          'v15 -> m.v15,
+          'v16 -> m.v16,
+          'v17 -> m.v17,
+          'v18 -> m.v18,
+          'v19 -> m.v19,
+          'v20 -> m.v20,
+          'v21 -> m.v21,
+          'v22 -> m.v22,
+          'v23 -> m.v23,
+          'v24 -> m.v24,
+          'createdAt -> m.createdAt
         ).update.apply()
+      m
     }
   }
 
   def delete(m: UnNormalized): Unit = {
     DB localTx { implicit session =>
-      SQL("""DELETE FROM UN_NORMALIZED WHERE ID = ?""")
-        .bind(m.id).update.apply()
+      SQL("""DELETE FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
+        .bindByName('id -> m.id).update.apply()
     }
   }
 
 }
-

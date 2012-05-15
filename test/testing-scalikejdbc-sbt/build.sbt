@@ -13,7 +13,7 @@ resolvers ++= Seq(
 
 libraryDependencies <++= (scalaVersion) { scalaVersion =>
   Seq(
-    "com.github.seratch" %% "scalikejdbc" % "0.6.7",
+    "com.github.seratch" %% "scalikejdbc" % "1.1.0",
     "org.hsqldb" % "hsqldb" % "[2,)",
     "org.scalatest" %% "scalatest" % "[1.7,)" % "test"
   )

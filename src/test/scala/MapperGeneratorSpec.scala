@@ -2,7 +2,7 @@ import org.scalatest._
 import org.scalatest.matchers._
 
 import scalikejdbc._
-import mapper.{ GeneratorConfig, ARLikeTemplateGenerator, Model }
+import mapper.{ GeneratorTemplate, GeneratorConfig, ARLikeTemplateGenerator, Model }
 
 class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
 
@@ -35,21 +35,25 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
 
     Model(url, username, password).table(null, "MEMBER").map {
       table =>
-        val generator = ARLikeTemplateGenerator(table)(GeneratorConfig(
+        val generator1 = ARLikeTemplateGenerator(table)(GeneratorConfig(
           srcDir = "src/test/scala",
+          template = GeneratorTemplate("executableSQL"),
           packageName = "com.example"
         ))
-        println(generator.generateAll())
-        generator.writeFileIfNotExist()
+        generator1.writeFileIfNotExist()
+        val generator2 = ARLikeTemplateGenerator(table)(GeneratorConfig(
+          srcDir = "src/test/scala",
+          template = GeneratorTemplate("placeHolderSQL"),
+          packageName = "com.example.placeholder"
+        ))
+        generator2.writeFileIfNotExist()
     } getOrElse {
       fail("The table is not found.")
     }
-    Thread.sleep(1500)
+    Thread.sleep(500)
   }
 
   it should "work fine with large table" in {
-
-    Thread.sleep(500)
 
     DB autoCommit { implicit session =>
       try {
@@ -104,13 +108,12 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
           srcDir = "src/test/scala",
           packageName = "com.example"
         ))
-        println(generator.generateAll())
         generator.writeFileIfNotExist()
     } getOrElse {
       fail("The table is not found.")
     }
 
-    Thread.sleep(1500)
+    Thread.sleep(500)
   }
 
   it should "work fine with without_pk" in {
@@ -136,12 +139,11 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
           srcDir = "src/test/scala",
           packageName = "com.example"
         ))
-        println(generator.generateAll())
         generator.writeFileIfNotExist()
     } getOrElse {
       fail("The table is not found.")
     }
-    Thread.sleep(1500)
+    Thread.sleep(500)
   }
 
 }
