@@ -4,6 +4,7 @@ import org.scalatest.matchers._
 import org.joda.time._
 import scalikejdbc._
 import com.example._
+import dao.MemberDao
 
 class UsingMappersSpec extends FlatSpec with ShouldMatchers {
 
@@ -18,6 +19,20 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
     Member.create("Alice" + System.currentTimeMillis, Some("Example"), None, new org.joda.time.DateTime)
     Member.findAll() foreach println
     Member.findBy(Member.columnNames.description + " = /*'description*/'aaa'", 'description -> "Example") foreach println
+  }
+
+  it should "work fine with MemberDao" in {
+    try {
+      DB localTx { session =>
+        val memberDao = MemberDao(session)
+        memberDao.create("Rollback", Some("Rollback test"), None, new org.joda.time.DateTime)
+        memberDao.findAll() foreach println
+        memberDao.findBy(Member.columnNames.description + " = /*'description*/'aaa'",
+          'description -> "Rollback test").size should equal(1)
+        throw new RuntimeException
+      }
+    } catch { case e => }
+    Member.findBy("name = /*'name*/''", 'name -> "Rollback") should equal(Nil)
   }
 
   it should "work fine with UnNormalized" in {
