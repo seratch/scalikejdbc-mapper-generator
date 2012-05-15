@@ -4,7 +4,6 @@ import org.scalatest.matchers._
 import org.joda.time._
 import scalikejdbc._
 import com.example._
-import dao.MemberDao
 
 class UsingMappersSpec extends FlatSpec with ShouldMatchers {
 
@@ -21,18 +20,18 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
     Member.findBy(Member.columnNames.description + " = /*'description*/'aaa'", 'description -> "Example") foreach println
   }
 
-  it should "work fine with MemberDao" in {
+  it should "support within tx" in {
+    DB autoCommit { implicit session =>
+      Member.findBy("name = /*'name*/''", 'name -> "Rollback").foreach { member => member.destroy() }
+    }
     try {
-      DB localTx { session =>
-        val memberDao = MemberDao(session)
-        memberDao.create("Rollback", Some("Rollback test"), None, new org.joda.time.DateTime)
-        memberDao.findAll() foreach println
-        memberDao.findBy(Member.columnNames.description + " = /*'description*/'aaa'",
-          'description -> "Rollback test").size should equal(1)
+      DB localTx { implicit session =>
+        Member.create("Rollback", Some("Rollback test"), None, new DateTime)
+        Member.findBy("name = /*'name*/''", 'name -> "Rollback").size should equal(1)
         throw new RuntimeException
       }
     } catch { case e => }
-    Member.findBy("name = /*'name*/''", 'name -> "Rollback") should equal(Nil)
+    Member.findBy("name = /*'name*/''", 'name -> "Rollback").size should equal(0)
   }
 
   it should "work fine with UnNormalized" in {
