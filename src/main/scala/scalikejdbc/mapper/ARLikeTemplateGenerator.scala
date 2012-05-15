@@ -28,7 +28,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
   private val packageName = config.packageName
   private val className = toClassName(table)
   private val comma = ","
-  private val eol = config.lineBreak
+  private val eol = config.lineBreak.value
 
   object TypeName {
     val Any = "Any"
@@ -166,12 +166,10 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     if (table.allColumns.size <= 22) {
       "case class " + className + "(" + eol +
         table.allColumns.map {
-          c =>
-            1.indent + c.nameInScala + ": " + c.typeInScala +
-              (if (c.isNotNull) "" else " = None")
+          c => 1.indent + c.nameInScala + ": " + c.typeInScala + (if (c.isNotNull) "" else " = None")
         }.mkString(", " + eol) + ") { " + eol +
         eol +
-        1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
+        1.indent + "def save(): " + className + " = " + className + ".save(this)" + eol +
         eol +
         1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +
         eol +
@@ -196,7 +194,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         2.indent + ")" + eol +
         1.indent + "}" + eol +
         eol +
-        1.indent + "def save(): Unit = " + className + ".save(this)" + eol +
+        1.indent + "def save(): " + className + " = " + className + ".save(this)" + eol +
         eol +
         1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +
         eol +
@@ -281,7 +279,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         1.indent + "}" + eol
 
     val saveMethod =
-      1.indent + "def save(m: " + className + "): Unit = {" + eol +
+      1.indent + "def save(m: " + className + "): " + className + " = {" + eol +
         2.indent + "DB localTx { implicit session =>" + eol +
         3.indent + "SQL(\"\"\"" + eol +
         4.indent + "UPDATE " + eol +
@@ -295,6 +293,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         allColumns.map(c => 4.indent + "m." + c.nameInScala).mkString(comma + eol) + ", " + eol +
         pkColumns.map(pk => 4.indent + "m." + pk.nameInScala).mkString(comma + eol) + eol +
         3.indent + ").update.apply()" + eol +
+        3.indent + "m" + eol +
         2.indent + "}" + eol +
         1.indent + "}" + eol
 
