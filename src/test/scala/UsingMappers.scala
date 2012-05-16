@@ -21,7 +21,7 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
   }
 
   it should "support within tx" in {
-    DB autoCommit { implicit session =>
+    DB readOnly { implicit session =>
       Member.findBy("name = /*'name*/''", 'name -> "Rollback").foreach { member => member.destroy() }
     }
     try {

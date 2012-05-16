@@ -33,93 +33,108 @@ object WithoutPk {
       createdAt = rs.timestamp(createdAt).toDateTime)
   }
 
-  def find(aaa: String, bbb: Option[Int], createdAt: DateTime): Option[WithoutPk] = {
-    DB readOnly { implicit session =>
-      SQL("""SELECT * FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
-        .bindByName('aaa -> aaa, 'bbb -> bbb, 'createdAt -> createdAt).map(*).single.apply()
+  def find(aaa: String, bbb: Option[Int], createdAt: DateTime)(implicit session: DBSession = NoDBSession): Option[WithoutPk] = {
+    val sql = SQL("""SELECT * FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
+      .bindByName('aaa -> aaa, 'bbb -> bbb, 'createdAt -> createdAt).map(*).single
+    session match {
+      case NoDBSession => DB readOnly (implicit session => sql.apply())
+      case _ => sql.apply()
     }
   }
 
-  def findAll(): List[WithoutPk] = {
-    DB readOnly { implicit session =>
-      SQL("""SELECT * FROM WITHOUT_PK""").map(*).list.apply()
+  def findAll()(implicit session: DBSession = NoDBSession): List[WithoutPk] = {
+    val sql = SQL("""SELECT * FROM WITHOUT_PK""").map(*).list
+    session match {
+      case NoDBSession => DB readOnly (implicit session => sql.apply())
+      case _ => sql.apply()
     }
   }
 
-  def countAll(): Long = {
-    DB readOnly { implicit session =>
-      SQL("""SELECT COUNT(1) FROM WITHOUT_PK""")
-        .map(rs => rs.long(1)).single.apply().get
+  def countAll()(implicit session: DBSession = NoDBSession): Long = {
+    val sql = SQL("""SELECT COUNT(1) FROM WITHOUT_PK""").map(rs => rs.long(1)).single
+    session match {
+      case NoDBSession => DB readOnly (implicit session => sql.apply().get)
+      case _ => sql.apply().get
     }
   }
 
-  def findBy(where: String, params: (Symbol, Any)*): List[WithoutPk] = {
-    DB readOnly { implicit session =>
-      SQL("""SELECT * FROM WITHOUT_PK WHERE """ + where)
-        .bindByName(params: _*).map(*).list.apply()
+  def findBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = NoDBSession): List[WithoutPk] = {
+    val sql = SQL("""SELECT * FROM WITHOUT_PK WHERE """ + where)
+      .bindByName(params: _*).map(*).list
+    session match {
+      case NoDBSession => DB readOnly (implicit session => sql.apply())
+      case _ => sql.apply()
     }
   }
 
-  def countBy(where: String, params: (Symbol, Any)*): Long = {
-    DB readOnly { implicit session =>
-      SQL("""SELECT count(1) FROM WITHOUT_PK WHERE """ + where)
-        .bindByName(params: _*).map(rs => rs.long(1)).single.apply().get
+  def countBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = NoDBSession): Long = {
+    val sql = SQL("""SELECT count(1) FROM WITHOUT_PK WHERE """ + where)
+      .bindByName(params: _*).map(rs => rs.long(1)).single
+    session match {
+      case NoDBSession => DB readOnly (implicit session => sql.apply().get)
+      case _ => sql.apply().get
     }
   }
 
   def create(
     aaa: String,
     bbb: Option[Int] = None,
-    createdAt: DateTime): WithoutPk = {
-    DB localTx { implicit session =>
-      SQL("""
-        INSERT INTO WITHOUT_PK (
-          AAA,
-          BBB,
-          CREATED_AT
-        ) VALUES (
-          /*'aaa*/'abc',
-          /*'bbb*/1,
-          /*'createdAt*/'1958-09-06 12:00:00'
-        )
+    createdAt: DateTime)(implicit session: DBSession = NoDBSession): WithoutPk = {
+    val sql = SQL("""
+      INSERT INTO WITHOUT_PK (
+        AAA,
+        BBB,
+        CREATED_AT
+      ) VALUES (
+        /*'aaa*/'abc',
+        /*'bbb*/1,
+        /*'createdAt*/'1958-09-06 12:00:00'
+      )
       """)
-        .bindByName(
-          'aaa -> aaa,
-          'bbb -> bbb,
-          'createdAt -> createdAt
-        ).update.apply()
-      WithoutPk(
-        aaa = aaa,
-        bbb = bbb,
-        createdAt = createdAt)
+      .bindByName(
+        'aaa -> aaa,
+        'bbb -> bbb,
+        'createdAt -> createdAt
+      ).update
+    session match {
+      case NoDBSession => DB localTx (implicit session => sql.apply())
+      case _ => sql.apply()
     }
+    WithoutPk(
+      aaa = aaa,
+      bbb = bbb,
+      createdAt = createdAt)
   }
 
-  def save(m: WithoutPk): WithoutPk = {
-    DB localTx { implicit session =>
-      SQL("""
-        UPDATE 
-          WITHOUT_PK
-        SET 
-          AAA = /*'aaa*/'abc',
-          BBB = /*'bbb*/1,
-          CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
-        WHERE 
-          AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
+  def save(m: WithoutPk)(implicit session: DBSession = NoDBSession): WithoutPk = {
+    val sql = SQL("""
+      UPDATE 
+        WITHOUT_PK
+      SET 
+        AAA = /*'aaa*/'abc',
+        BBB = /*'bbb*/1,
+        CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
+      WHERE 
+        AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'
       """)
-        .bindByName(
-          'aaa -> m.aaa,
-          'bbb -> m.bbb,
-          'createdAt -> m.createdAt
-        ).update.apply()
-      m
+      .bindByName(
+        'aaa -> m.aaa,
+        'bbb -> m.bbb,
+        'createdAt -> m.createdAt
+      ).update
+    session match {
+      case NoDBSession => DB localTx (implicit session => sql.apply())
+      case _ => sql.apply()
     }
+    m
   }
 
-  def delete(m: WithoutPk): Unit = {
-    DB localTx { implicit session =>
-      SQL("""DELETE FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
-        .bindByName('aaa -> m.aaa, 'bbb -> m.bbb, 'createdAt -> m.createdAt).update.apply()
+  def delete(m: WithoutPk)(implicit session: DBSession = NoDBSession): Unit = {
+    val sql = SQL("""DELETE FROM WITHOUT_PK WHERE AAA = /*'aaa*/'abc' AND BBB = /*'bbb*/1 AND CREATED_AT = /*'createdAt*/'1958-09-06 12:00:00'""")
+      .bindByName('aaa -> m.aaa, 'bbb -> m.bbb, 'createdAt -> m.createdAt).update
+    session match {
+      case NoDBSession => DB localTx (implicit session => sql.apply())
+      case _ => sql.apply()
     }
   }
 

@@ -6,12 +6,12 @@ scalaVersion := "2.9.1"
 
 resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases/"
 
-//resolvers += "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+resolvers += "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 libraryDependencies ++= Seq(
-  "com.github.seratch" %% "scalikejdbc" % "1.1.0",
+  "com.github.seratch" %% "scalikejdbc" % "1.1.1-SNAPSHOT",
   "ch.qos.logback" % "logback-classic" % "1.0.2",
   "com.h2database" % "h2" % "[1.3,)" % "test",
   "org.scalatest" %% "scalatest" % "[1.7,)" % "test"

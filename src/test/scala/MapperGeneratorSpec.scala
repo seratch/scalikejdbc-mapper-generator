@@ -40,12 +40,14 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
           template = GeneratorTemplate("executableSQL"),
           packageName = "com.example"
         ))
+        println(generator1.generateAll())
         generator1.writeFileIfNotExist()
         val generator2 = ARLikeTemplateGenerator(table)(GeneratorConfig(
           srcDir = "src/test/scala",
           template = GeneratorTemplate("placeHolderSQL"),
           packageName = "com.example.placeholder"
         ))
+        println(generator2.generateAll())
         generator2.writeFileIfNotExist()
     } getOrElse {
       fail("The table is not found.")
