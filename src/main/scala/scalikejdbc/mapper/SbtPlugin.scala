@@ -32,16 +32,16 @@ object SbtPlugin extends Plugin {
       inputStream => props.load(inputStream)
     }
     (JDBCSettings(
-      driver = props.get("jdbc.driver").toString,
-      url = props.get("jdbc.url").toString,
-      username = props.get("jdbc.username").toString,
-      password = props.get("jdbc.password").toString,
-      schema = props.get("jdbc.schema").toString
+      driver = Option(props.get("jdbc.driver")).map(_.toString).getOrElse(throw new IllegalStateException("Add jdbc.driver to project/scalikejdbc-mapper-generator.properties")),
+      url = Option(props.get("jdbc.url")).map(_.toString).getOrElse(throw new IllegalStateException("Add jdbc.url to project/scalikejdbc-mapper-generator.properties")),
+      username = Option(props.get("jdbc.username")).map(_.toString).getOrElse(""),
+      password = Option(props.get("jdbc.password")).map(_.toString).getOrElse(""),
+      schema = Option(props.get("jdbc.schema")).map(_.toString).orNull[String]
     ), GeneratorSetings(
-        packageName = props.get("generator.packageName").toString,
-        template = props.get("generator.template").toString,
-        lineBreak = props.get("generator.lineBreak").toString,
-        encoding = props.get("generator.encoding").toString
+        packageName = Option(props.get("generator.packageName")).map(_.toString).getOrElse("models"),
+        template = Option(props.get("generator.template")).map(_.toString).getOrElse("executableSQL"),
+        lineBreak = Option(props.get("generator.lineBreak")).map(_.toString).getOrElse("LF"),
+        encoding = Option(props.get("generator.encoding")).map(_.toString).getOrElse("UTF-8")
       ))
   }
 
