@@ -159,47 +159,27 @@ object UnNormalized {
       createdAt = rs.timestamp(createdAt).toDateTime)
   }
 
-  def find(id: Long)(implicit session: DBSession = NoDBSession): Option[UnNormalized] = {
-    val sql = SQL("""SELECT * FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
-      .bindByName('id -> id).map(*).single
-    session match {
-      case NoDBSession => DB readOnly (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+  def find(id: Long)(implicit session: DBSession = AutoSession): Option[UnNormalized] = {
+    SQL("""SELECT * FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
+      .bindByName('id -> id).map(*).single.apply()
   }
 
-  def findAll()(implicit session: DBSession = NoDBSession): List[UnNormalized] = {
-    val sql = SQL("""SELECT * FROM UN_NORMALIZED""").map(*).list
-    session match {
-      case NoDBSession => DB readOnly (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+  def findAll()(implicit session: DBSession = AutoSession): List[UnNormalized] = {
+    SQL("""SELECT * FROM UN_NORMALIZED""").map(*).list.apply()
   }
 
-  def countAll()(implicit session: DBSession = NoDBSession): Long = {
-    val sql = SQL("""SELECT COUNT(1) FROM UN_NORMALIZED""").map(rs => rs.long(1)).single
-    session match {
-      case NoDBSession => DB readOnly (implicit session => sql.apply().get)
-      case _ => sql.apply().get
-    }
+  def countAll()(implicit session: DBSession = AutoSession): Long = {
+    SQL("""SELECT COUNT(1) FROM UN_NORMALIZED""").map(rs => rs.long(1)).single.apply().get
   }
 
-  def findBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = NoDBSession): List[UnNormalized] = {
-    val sql = SQL("""SELECT * FROM UN_NORMALIZED WHERE """ + where)
-      .bindByName(params: _*).map(*).list
-    session match {
-      case NoDBSession => DB readOnly (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+  def findBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = AutoSession): List[UnNormalized] = {
+    SQL("""SELECT * FROM UN_NORMALIZED WHERE """ + where)
+      .bindByName(params: _*).map(*).list.apply()
   }
 
-  def countBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = NoDBSession): Long = {
-    val sql = SQL("""SELECT count(1) FROM UN_NORMALIZED WHERE """ + where)
-      .bindByName(params: _*).map(rs => rs.long(1)).single
-    session match {
-      case NoDBSession => DB readOnly (implicit session => sql.apply().get)
-      case _ => sql.apply().get
-    }
+  def countBy(where: String, params: (Symbol, Any)*)(implicit session: DBSession = AutoSession): Long = {
+    SQL("""SELECT count(1) FROM UN_NORMALIZED WHERE """ + where)
+      .bindByName(params: _*).map(rs => rs.long(1)).single.apply().get
   }
 
   def create(
@@ -227,8 +207,8 @@ object UnNormalized {
     v22: Boolean,
     v23: Float,
     v24: Double,
-    createdAt: DateTime)(implicit session: DBSession = NoDBSession): UnNormalized = {
-    val sql = SQL("""
+    createdAt: DateTime)(implicit session: DBSession = AutoSession): UnNormalized = {
+    val generatedKey = SQL("""
       INSERT INTO UN_NORMALIZED (
         V_01,
         V_02,
@@ -309,11 +289,7 @@ object UnNormalized {
         'v23 -> v23,
         'v24 -> v24,
         'createdAt -> createdAt
-      ).updateAndReturnGeneratedKey
-    val generatedKey = session match {
-      case NoDBSession => DB localTx (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+      ).updateAndReturnGeneratedKey.apply()
     new UnNormalized(
       id = generatedKey,
       v01 = v01,
@@ -343,8 +319,8 @@ object UnNormalized {
       createdAt = createdAt)
   }
 
-  def save(m: UnNormalized)(implicit session: DBSession = NoDBSession): UnNormalized = {
-    val sql = SQL("""
+  def save(m: UnNormalized)(implicit session: DBSession = AutoSession): UnNormalized = {
+    SQL("""
       UPDATE 
         UN_NORMALIZED
       SET 
@@ -404,21 +380,13 @@ object UnNormalized {
         'v23 -> m.v23,
         'v24 -> m.v24,
         'createdAt -> m.createdAt
-      ).update
-    session match {
-      case NoDBSession => DB localTx (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+      ).update.apply()
     m
   }
 
-  def delete(m: UnNormalized)(implicit session: DBSession = NoDBSession): Unit = {
-    val sql = SQL("""DELETE FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
-      .bindByName('id -> m.id).update
-    session match {
-      case NoDBSession => DB localTx (implicit session => sql.apply())
-      case _ => sql.apply()
-    }
+  def delete(m: UnNormalized)(implicit session: DBSession = AutoSession): Unit = {
+    SQL("""DELETE FROM UN_NORMALIZED WHERE ID = /*'id*/1""")
+      .bindByName('id -> m.id).update.apply()
   }
 
 }

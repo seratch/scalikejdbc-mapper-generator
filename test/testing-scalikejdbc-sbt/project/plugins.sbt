@@ -1,8 +1,8 @@
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 resolvers ++= Seq(
-  Classpaths.typesafeResolver,
-  "sonatype" at "http://oss.sonatype.org/content/repositories/releases/"
+  "sonatype" at "http://oss.sonatype.org/content/repositories/releases/",
+  "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 )
 
 libraryDependencies += "org.hsqldb" % "hsqldb" % "[2,)"

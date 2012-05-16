@@ -10,27 +10,27 @@ resolvers += "Sonatype OSS" at "http://oss.sonatype.org/content/repositories/rel
 // Don't forget adding your JDBC driver
 libraryDependencies += "org.hsqldb" % "hsqldb" % "[2,)"
 
-addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.0.1")
+addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.1.0")
+```
+
+### project/scalikejdbc-mapper-generator.properties
+
+```
+dbc.driver=org.hsqldb.jdbc.JDBCDriver
+jdbc.url=jdbc:hsqldb:file:db/test
+jdbc.username=sa
+jdbc.password=
+jdbc.schema=
+generator.packageName=models
+geneartor.lineBreak=LF
+generator.template=executableSQL
+generator.encoding=UTF-8
 ```
 
 ### build.sbt
 
 ```
-import scalikejdbc.mapper.SbtKeys._
-
 seq(scalikejdbcSettings: _*)
-
-scalikejdbcDriver in Compile := "org.hsqldb.jdbc.JDBCDriver"
-
-scalikejdbcUrl in Compile := "jdbc:hsqldb:file:db/test"
-
-scalikejdbcUsername in Compile := "sa"
-
-scalikejdbcPassword in Compile := ""
-
-//scalikejdbcSchema in Compile := ""
-
-scalikejdbcPackageName in Compile := "com.example.models"
 ```
 
 ### Sbt command

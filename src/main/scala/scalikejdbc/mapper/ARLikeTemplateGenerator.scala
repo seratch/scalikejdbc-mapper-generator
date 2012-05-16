@@ -321,8 +321,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      * def create(
      *   name: String,
      *   birthday: Option[LocalDate])
-     *   (implicit session: DBSession = NoDBSession): Member = {
-     *   val sql = SQL("""
+     *   (implicit session: DBSession = AutoSession): Member = {
+     *   val generatedKey = SQL("""
      *     INSERT INTO MEMBER (
      *       NAME,
      *       BIRTHDAY
@@ -334,11 +334,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      *     .bindByName(
      *       'name -> name,
      *       'birthday -> birthday
-     *     ).updateAndReturnGeneratedKey
-     *   val generatedKey = session match {
-     *     case NoDBSession => DB localTx (implicit session => sql.apply())
-     *     case _ => sql.apply()
-     *   }
+     *     ).updateAndReturnGeneratedKey.apply()
      *   Member(
      *     id = generatedKey,
      *     name = name,
@@ -373,8 +369,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       1.indent + "def create(" + eol +
         createColumns.map {
           c => 2.indent + c.nameInScala + ": " + c.typeInScala + (if (c.isNotNull) "" else " = None")
-        }.mkString(comma + eol) + ")(implicit session: DBSession = NoDBSession): " + className + " = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"" + eol +
+        }.mkString(comma + eol) + ")(implicit session: DBSession = AutoSession): " + className + " = {" + eol +
+        2.indent + (table.autoIncrementColumns.size match {
+          case 0 => ""
+          case _ => "val generatedKey = "
+        }) +
+        "SQL(\"\"\"" + eol +
         3.indent + "INSERT INTO " + table.name + " (" + eol +
         createColumns.map(c => 4.indent + c.name).mkString(comma + eol) + eol +
         3.indent + ") VALUES (" + eol +
@@ -383,18 +383,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         3.indent + "\"\"\")" + eol +
         bindingPart + eol +
         (table.autoIncrementColumns.size match {
-          case 0 => 3.indent + ").update"
-          case _ => 3.indent + ").updateAndReturnGeneratedKey"
+          case 0 => 3.indent + ").update.apply()"
+          case _ => 3.indent + ").updateAndReturnGeneratedKey.apply()"
         }) + eol +
-        2.indent +
-        (table.autoIncrementColumns.size match {
-          case i if i > 0 => "val generatedKey = "
-          case _ => ""
-        }) +
-        "session match {" + eol +
-        3.indent + "case NoDBSession => DB localTx (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
         2.indent + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
         (if (table.autoIncrementColumns.size > 0) table.autoIncrementColumns.map {
           c => 3.indent + c.nameInScala + " = generatedKey, "
@@ -408,8 +399,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
 
     /**
      * {{{
-     * def save(m: Member)(implicit session: DBSession = NoDBSession): Member = {
-     *   val sql = SQL("""
+     * def save(m: Member)(implicit session: DBSession = AutoSession): Member = {
+     *   SQL("""
      *     UPDATE
      *       MEMBER
      *     SET
@@ -423,11 +414,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      *       'id -> m.id,
      *       'name -> m.name,
      *       'birthday -> m.birthday
-     *     ).update
-     *   session match {
-     *     case NoDBSession => DB localTx (implicit session => sql.apply())
-     *     case _ => sql.apply()
-     *   }
+     *     ).update.apply()
      *   m
      * }
      * }}}
@@ -458,8 +445,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
             allColumns.map(c => 4.indent + "'" + c.nameInScala + " -> m." + c.nameInScala).mkString(comma + eol)
       }
 
-      1.indent + "def save(m: " + className + ")(implicit session: DBSession = NoDBSession): " + className + " = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"" + eol +
+      1.indent + "def save(m: " + className + ")(implicit session: DBSession = AutoSession): " + className + " = {" + eol +
+        2.indent + "SQL(\"\"\"" + eol +
         3.indent + "UPDATE " + eol +
         4.indent + table.name + eol +
         3.indent + "SET " + eol +
@@ -468,25 +455,17 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         wherePart + eol +
         3.indent + "\"\"\")" + eol +
         bindingPart + eol +
-        3.indent + ").update" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB localTx (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
+        3.indent + ").update.apply()" + eol +
         2.indent + "m" + eol +
         1.indent + "}" + eol
     }
 
     /**
      * {{{
-     * def delete(m: Member)(implicit session: DBSession = NoDBSession): Unit = {
-     *   val sql = SQL("""DELETE FROM MEMBER WHERE ID = /*'id*/123""")
+     * def delete(m: Member)(implicit session: DBSession = AutoSession): Unit = {
+     *   SQL("""DELETE FROM MEMBER WHERE ID = /*'id*/123""")
      *     .bindByName('id -> m.id)
-     *     .update
-     *   session match {
-     *     case NoDBSession => DB localTx (implicit session => sql.apply())
-     *     case _ => sql.apply()
-     *   }
+     *     .update.apply()
      * }
      * }}}
      */
@@ -506,13 +485,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
           ".bindByName(" + pkColumns.map(pk => "'" + pk.nameInScala + " -> m." + pk.nameInScala).mkString(", ")
       }
 
-      1.indent + "def delete(m: " + className + ")(implicit session: DBSession = NoDBSession): Unit = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"DELETE FROM " + table.name + " WHERE " + wherePart + "\"\"\")" + eol +
-        3.indent + bindingPart + ").update" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB localTx (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
+      1.indent + "def delete(m: " + className + ")(implicit session: DBSession = AutoSession): Unit = {" + eol +
+        2.indent + "SQL(\"\"\"DELETE FROM " + table.name + " WHERE " + wherePart + "\"\"\")" + eol +
+        3.indent + bindingPart + ").update.apply()" + eol +
         1.indent + "}" + eol
     }
 
@@ -528,8 +503,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      */
     val findMethod =
       1.indent + "def find(" + pkColumns.map(pk => pk.nameInScala + ": " + pk.typeInScala).mkString(", ") +
-        ")(implicit session: DBSession = NoDBSession): Option[" + className + "] = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"SELECT * FROM " + table.name + " WHERE " + (config.template match {
+        ")(implicit session: DBSession = AutoSession): Option[" + className + "] = {" + eol +
+        2.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE " + (config.template match {
           case GeneratorTemplate.placeHolderSQL =>
             pkColumns.map(pk => pk.name + " = ?").mkString(" AND ")
           case GeneratorTemplate.execautableSQL =>
@@ -540,11 +515,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
             ".bind(" + pkColumns.map(pk => pk.nameInScala).mkString(", ")
           case GeneratorTemplate.execautableSQL =>
             ".bindByName(" + pkColumns.map(pk => "'" + pk.nameInScala + " -> " + pk.nameInScala).mkString(", ")
-        }) + ").map(*).single" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB readOnly (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
+        }) + ").map(*).single.apply()" + eol +
         1.indent + "}" + eol
 
     /**
@@ -558,12 +529,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      * }}}
      */
     val countAllMethod =
-      1.indent + "def countAll()(implicit session: DBSession = NoDBSession): Long = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"SELECT COUNT(1) FROM " + table.name + "\"\"\").map(rs => rs.long(1)).single" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB readOnly (implicit session => sql.apply().get)" + eol +
-        3.indent + "case _ => sql.apply().get" + eol +
-        2.indent + "}" + eol +
+      1.indent + "def countAll()(implicit session: DBSession = AutoSession): Long = {" + eol +
+        2.indent + "SQL(\"\"\"SELECT COUNT(1) FROM " + table.name + "\"\"\").map(rs => rs.long(1)).single.apply().get" + eol +
         1.indent + "}" + eol
 
     /**
@@ -576,12 +543,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      * }}}
      */
     val findAllMethod =
-      1.indent + "def findAll()(implicit session: DBSession = NoDBSession): List[" + className + "] = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"SELECT * FROM " + table.name + "\"\"\").map(*).list" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB readOnly (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
+      1.indent + "def findAll()(implicit session: DBSession = AutoSession): List[" + className + "] = {" + eol +
+        2.indent + "SQL(\"\"\"SELECT * FROM " + table.name + "\"\"\").map(*).list.apply()" + eol +
         1.indent + "}" + eol
 
     /**
@@ -598,16 +561,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       1.indent + "def findBy(where: String, " + (config.template match {
         case GeneratorTemplate.placeHolderSQL => "params: Any*"
         case GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
-      }) + ")(implicit session: DBSession = NoDBSession): List[" + className + "] = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"SELECT * FROM " + table.name + " WHERE \"\"\" + where)" + eol +
+      }) + ")(implicit session: DBSession = AutoSession): List[" + className + "] = {" + eol +
+        2.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE \"\"\" + where)" + eol +
         3.indent + (config.template match {
           case GeneratorTemplate.placeHolderSQL => ".bind"
           case GeneratorTemplate.execautableSQL => ".bindByName"
-        }) + "(params:_*).map(*).list" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB readOnly (implicit session => sql.apply())" + eol +
-        3.indent + "case _ => sql.apply()" + eol +
-        2.indent + "}" + eol +
+        }) + "(params:_*).map(*).list.apply()" + eol +
         1.indent + "}" + eol
 
     /**
@@ -615,7 +574,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
      * def countBy(where: String, params:(Symbol, Any)*): Long = {
      *   DB readOnly { implicit session =>
      *     SQL("""SELECT COUNT(1) FROM MEMBER """ + where)
-     *       .bindByName(params:_*).map(*).list.apply()
+     *       .bindByName(params:_*).map(*).single.apply().get
      *   }
      * }
      * }}}
@@ -624,16 +583,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       1.indent + "def countBy(where: String, " + (config.template match {
         case GeneratorTemplate.placeHolderSQL => "params: Any*"
         case GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
-      }) + ")(implicit session: DBSession = NoDBSession): Long = {" + eol +
-        2.indent + "val sql = SQL(\"\"\"SELECT count(1) FROM " + table.name + " WHERE \"\"\" + where)" + eol +
+      }) + ")(implicit session: DBSession = AutoSession): Long = {" + eol +
+        2.indent + "SQL(\"\"\"SELECT count(1) FROM " + table.name + " WHERE \"\"\" + where)" + eol +
         3.indent + (config.template match {
           case GeneratorTemplate.placeHolderSQL => ".bind"
           case GeneratorTemplate.execautableSQL => ".bindByName"
-        }) + "(params:_*).map(rs => rs.long(1)).single" + eol +
-        2.indent + "session match {" + eol +
-        3.indent + "case NoDBSession => DB readOnly (implicit session => sql.apply().get)" + eol +
-        3.indent + "case _ => sql.apply().get" + eol +
-        2.indent + "}" + eol +
+        }) + "(params:_*).map(rs => rs.long(1)).single.apply().get" + eol +
         1.indent + "}" + eol
 
     "object " + className + " {" + eol +

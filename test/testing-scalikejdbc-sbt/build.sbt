@@ -7,13 +7,13 @@ crossScalaVersions := Seq("2.9.2", "2.9.1", "2.9.0")
 externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository"))
 
 resolvers ++= Seq(
-  "typesafe" at "http://repo.typesafe.com/typesafe/releases",
-  "sonatype" at "http://oss.sonatype.org/content/repositories/releases/"
+  "sonatype" at "http://oss.sonatype.org/content/repositories/releases/",
+  "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 )
 
 libraryDependencies <++= (scalaVersion) { scalaVersion =>
   Seq(
-    "com.github.seratch" %% "scalikejdbc" % "1.1.0",
+    "com.github.seratch" %% "scalikejdbc" % "1.1.1-SNAPSHOT",
     "org.hsqldb" % "hsqldb" % "[2,)",
     "org.scalatest" %% "scalatest" % "[1.7,)" % "test"
   )
@@ -26,14 +26,4 @@ seq(scalariformSettings: _*)
 // https://github.com/seratch/scalikejdbc-mapper-generator
 
 seq(scalikejdbcSettings: _*)
-
-scalikejdbcDriver in Compile := "org.hsqldb.jdbc.JDBCDriver"
-
-scalikejdbcUrl in Compile := "jdbc:hsqldb:file:db/test"
-
-scalikejdbcUsername in Compile := "sa"
-
-scalikejdbcPassword in Compile := ""
-
-scalikejdbcPackageName in Compile := "com.example.models"
 

@@ -22,7 +22,7 @@ class MapperGeneratorSpec extends FlatSpec with ShouldMatchers {
           e.printStackTrace()
           SQL("""
             create table member (
-              id bigint generated always as identity,
+              id int generated always as identity,
               name varchar(30) not null,
               description varchar(1000),
               birthday date,
