@@ -16,7 +16,7 @@ addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.1.1")
 ### project/scalikejdbc-mapper-generator.properties
 
 ```
-dbc.driver=org.hsqldb.jdbc.JDBCDriver
+jdbc.driver=org.hsqldb.jdbc.JDBCDriver
 jdbc.url=jdbc:hsqldb:file:db/test
 jdbc.username=sa
 jdbc.password=
