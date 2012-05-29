@@ -10,7 +10,7 @@ resolvers += "Sonatype OSS" at "http://oss.sonatype.org/content/repositories/rel
 // Don't forget adding your JDBC driver
 libraryDependencies += "org.hsqldb" % "hsqldb" % "[2,)"
 
-addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.2.2")
+addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "1.2.3")
 ```
 
 ### project/scalikejdbc-mapper-generator.properties
@@ -22,7 +22,9 @@ jdbc.username=sa
 jdbc.password=
 jdbc.schema=
 generator.packageName=models
+# generator.lineBreak: LF/CRLF
 geneartor.lineBreak=LF
+# generator.template: placeHolderSQL/anormSQL/executableSQL
 generator.template=executableSQL
 generator.encoding=UTF-8
 ```
