@@ -20,6 +20,18 @@ class UsingMappersSpec extends FlatSpec with ShouldMatchers {
     Member.findBy(Member.columnNames.description + " = /*'description*/'aaa'", 'description -> "Example") foreach println
   }
 
+  it should "work fine with placeholder.Member" in {
+    placeholder.Member.create("Alice" + System.currentTimeMillis, Some("Example"), None, new org.joda.time.DateTime)
+    placeholder.Member.findAll() foreach println
+    placeholder.Member.findBy(Member.columnNames.description + " = ?", "Example") foreach println
+  }
+
+  it should "work fine with anorm.Member" in {
+    anorm.Member.create("Alice" + System.currentTimeMillis, Some("Example"), None, new org.joda.time.DateTime)
+    anorm.Member.findAll() foreach println
+    anorm.Member.findBy(Member.columnNames.description + " = {description}", 'description -> "Example") foreach println
+  }
+
   it should "support within tx" in {
     DB readOnly { implicit session =>
       Member.findBy("name = /*'name*/''", 'name -> "Rollback").foreach { member => member.destroy() }

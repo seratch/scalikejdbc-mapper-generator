@@ -24,6 +24,7 @@ case class GeneratorConfig(srcDir: String = "src/main/scala",
 
 object GeneratorTemplate {
   val execautableSQL = GeneratorTemplate("executableSQL")
+  val anormSQL = GeneratorTemplate("anormSQL")
   val placeHolderSQL = GeneratorTemplate("placeHolderSQL")
 }
 

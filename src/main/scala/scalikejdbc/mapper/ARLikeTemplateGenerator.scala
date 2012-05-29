@@ -351,6 +351,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       val placeHolderPart: String = config.template match {
         case GeneratorTemplate.placeHolderSQL =>
           (1 to createColumns.size).map(c => 4.indent + "?").mkString(comma + eol)
+        case GeneratorTemplate.anormSQL =>
+          createColumns.map(c => 4.indent + "{" + c.nameInScala + "}").mkString(comma + eol)
         case GeneratorTemplate.execautableSQL =>
           createColumns.map(c => 4.indent + "/*'" + c.nameInScala + "*/" + c.dummyValue).mkString(comma + eol)
       }
@@ -359,7 +361,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         case GeneratorTemplate.placeHolderSQL =>
           3.indent + ".bind(" + eol +
             createColumns.map(c => 4.indent + c.nameInScala).mkString(comma + eol)
-        case GeneratorTemplate.execautableSQL =>
+        case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL =>
           3.indent + ".bindByName(" + eol +
             createColumns.map {
               c => 4.indent + "'" + c.nameInScala + " -> " + c.nameInScala
@@ -424,6 +426,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       val placeHolderPart: String = config.template match {
         case GeneratorTemplate.placeHolderSQL =>
           allColumns.map(c => 4.indent + c.name + " = ?").mkString(comma + eol)
+        case GeneratorTemplate.anormSQL =>
+          allColumns.map(c => 4.indent + c.name + " = {" + c.nameInScala + "}").mkString(comma + eol)
         case GeneratorTemplate.execautableSQL =>
           allColumns.map(c => 4.indent + c.name + " = /*'" + c.nameInScala + "*/" + c.dummyValue).mkString(comma + eol)
       }
@@ -431,6 +435,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       val wherePart = config.template match {
         case GeneratorTemplate.placeHolderSQL =>
           4.indent + pkColumns.map(pk => pk.name + " = ?").mkString(" AND ")
+        case GeneratorTemplate.anormSQL =>
+          4.indent + pkColumns.map(pk => pk.name + " = {" + pk.nameInScala + "}").mkString(" AND ")
         case GeneratorTemplate.execautableSQL =>
           4.indent + pkColumns.map(pk => pk.name + " = /*'" + pk.nameInScala + "*/" + pk.dummyValue).mkString(" AND ")
       }
@@ -440,7 +446,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
           3.indent + ".bind(" + eol +
             allColumns.map(c => 4.indent + "m." + c.nameInScala).mkString(comma + eol) + ", " + eol +
             pkColumns.map(pk => 4.indent + "m." + pk.nameInScala).mkString(comma + eol)
-        case GeneratorTemplate.execautableSQL =>
+        case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL =>
           3.indent + ".bindByName(" + eol +
             allColumns.map(c => 4.indent + "'" + c.nameInScala + " -> m." + c.nameInScala).mkString(comma + eol)
       }
@@ -474,6 +480,8 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       val wherePart: String = config.template match {
         case GeneratorTemplate.placeHolderSQL =>
           pkColumns.map(pk => pk.name + " = ?").mkString(" AND ")
+        case GeneratorTemplate.anormSQL =>
+          pkColumns.map(pk => pk.name + " = {" + pk.nameInScala + "}").mkString(" AND ")
         case GeneratorTemplate.execautableSQL =>
           pkColumns.map(pk => pk.name + " = /*'" + pk.nameInScala + "*/" + pk.dummyValue).mkString(" AND ")
       }
@@ -481,7 +489,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
       val bindingPart: String = config.template match {
         case GeneratorTemplate.placeHolderSQL =>
           ".bind(" + pkColumns.map(pk => "m." + pk.nameInScala).mkString(", ")
-        case GeneratorTemplate.execautableSQL =>
+        case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL =>
           ".bindByName(" + pkColumns.map(pk => "'" + pk.nameInScala + " -> m." + pk.nameInScala).mkString(", ")
       }
 
@@ -507,13 +515,15 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         2.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE " + (config.template match {
           case GeneratorTemplate.placeHolderSQL =>
             pkColumns.map(pk => pk.name + " = ?").mkString(" AND ")
+          case GeneratorTemplate.anormSQL =>
+            pkColumns.map(pk => pk.name + " = {" + pk.nameInScala + "}").mkString(" AND ")
           case GeneratorTemplate.execautableSQL =>
             pkColumns.map(pk => pk.name + " = /*'" + pk.nameInScala + "*/" + pk.dummyValue).mkString(" AND ")
         }) + "\"\"\")" + eol +
         3.indent + (config.template match {
           case GeneratorTemplate.placeHolderSQL =>
             ".bind(" + pkColumns.map(pk => pk.nameInScala).mkString(", ")
-          case GeneratorTemplate.execautableSQL =>
+          case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL =>
             ".bindByName(" + pkColumns.map(pk => "'" + pk.nameInScala + " -> " + pk.nameInScala).mkString(", ")
         }) + ").map(*).single.apply()" + eol +
         1.indent + "}" + eol
@@ -560,12 +570,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val findByMethod =
       1.indent + "def findBy(where: String, " + (config.template match {
         case GeneratorTemplate.placeHolderSQL => "params: Any*"
-        case GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
+        case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
       }) + ")(implicit session: DBSession = AutoSession): List[" + className + "] = {" + eol +
         2.indent + "SQL(\"\"\"SELECT * FROM " + table.name + " WHERE \"\"\" + where)" + eol +
         3.indent + (config.template match {
           case GeneratorTemplate.placeHolderSQL => ".bind"
-          case GeneratorTemplate.execautableSQL => ".bindByName"
+          case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL => ".bindByName"
         }) + "(params:_*).map(*).list.apply()" + eol +
         1.indent + "}" + eol
 
@@ -582,12 +592,12 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
     val countByMethod =
       1.indent + "def countBy(where: String, " + (config.template match {
         case GeneratorTemplate.placeHolderSQL => "params: Any*"
-        case GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
+        case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL => "params: (Symbol, Any)*"
       }) + ")(implicit session: DBSession = AutoSession): Long = {" + eol +
         2.indent + "SQL(\"\"\"SELECT count(1) FROM " + table.name + " WHERE \"\"\" + where)" + eol +
         3.indent + (config.template match {
           case GeneratorTemplate.placeHolderSQL => ".bind"
-          case GeneratorTemplate.execautableSQL => ".bindByName"
+          case GeneratorTemplate.anormSQL | GeneratorTemplate.execautableSQL => ".bindByName"
         }) + "(params:_*).map(rs => rs.long(1)).single.apply().get" + eol +
         1.indent + "}" + eol
 
