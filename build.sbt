@@ -1,4 +1,4 @@
-import testgen.TestgenKeys._
+import testgenerator.SbtKeys._
 
 sbtPlugin := true
 
@@ -21,20 +21,17 @@ seq(lsSettings :_*)
 
 seq(scalariformSettings: _*)
 
-// testgen
+seq(testgeneratorSettings: _*)
 
-seq(testgenSettings: _*)
+testgeneratorEncoding in Compile := "UTF-8"
 
-testgenEncoding in Compile := "UTF-8"
+testgeneratorTestTemplate in Compile := "scalatest.FlatSpec"
 
-testgenTestTemplate in Compile := "scalatest.FlatSpec"
+testgeneratorScalaTestMatchers in Compile := "ShouldMatchers"
 
-testgenScalaTestMatchers in Compile := "ShouldMatchers"
+testgeneratorWithJUnitRunner in Compile := false
 
-testgenWithJUnitRunner in Compile := false
-
-testgenLineBreak in Compile := "LF"
-
+testgeneratorLineBreak in Compile := "LF"
 
 // publish
 

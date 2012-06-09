@@ -18,7 +18,10 @@ package scalikejdbc.mapper
 import sbt.{ SettingKey, InputKey }
 
 object SbtKeys {
+
   lazy val scalikejdbcGen = InputKey[Unit]("scalikejdbc-gen")
+  lazy val scalikejdbcGenEcho = InputKey[Unit]("scalikejdbc-gen-echo")
+
   lazy val scalikejdbcDriver = SettingKey[String]("scalikejdbc-driver")
   lazy val scalikejdbcUrl = SettingKey[String]("scalikejdbc-url")
   lazy val scalikejdbcUsername = SettingKey[String]("scalikejdbc-username")
@@ -26,4 +29,5 @@ object SbtKeys {
   lazy val scalikejdbcSchema = SettingKey[String]("scalikejdbc-schema")
   lazy val scalikejdbcPackageName = SettingKey[String]("scalikejdbc-package-name")
   lazy val scalikejdbcLineBreak = SettingKey[String]("scalikejdbc-line-break")
+
 }

@@ -45,39 +45,53 @@ object SbtPlugin extends Plugin {
       ))
   }
 
+  def generator(tableName: String, srcDir: File, testDir: File): Option[ARLikeTemplateGenerator] = {
+    val (jdbc, generatorSettings) = loadSettings()
+    Class.forName(jdbc.driver) // load specified jdbc driver
+    val model = Model(jdbc.url, jdbc.username, jdbc.password)
+    model.table(jdbc.schema, tableName)
+      .orElse(model.table(jdbc.schema, tableName.toUpperCase))
+      .orElse(model.table(jdbc.schema, tableName.toLowerCase))
+      .map { table =>
+        Option(ARLikeTemplateGenerator(table)(GeneratorConfig(
+          srcDir = srcDir.getAbsolutePath,
+          testDir = testDir.getAbsolutePath,
+          packageName = generatorSettings.packageName,
+          template = GeneratorTemplate(generatorSettings.template),
+          lineBreak = LineBreak(generatorSettings.lineBreak),
+          encoding = generatorSettings.encoding
+        )))
+      } getOrElse {
+        println("The table is not found.")
+        None
+      }
+  }
+
   val genTask = inputTask {
     (task: TaskKey[Seq[String]]) =>
       (task, scalaSource in Compile, scalaSource in Test) map {
         case (args, srcDir, testDir) =>
           args match {
             case Nil => println("Usage: scalikejdbc-gen [table-name]")
-            case _ =>
-              val (jdbc, generatorSettings) = loadSettings()
-              Class.forName(jdbc.driver) // load specified jdbc driver
-              val tableName = args.head
-              val model = Model(jdbc.url, jdbc.username, jdbc.password)
-              model.table(jdbc.schema, tableName)
-                .orElse(model.table(jdbc.schema, tableName.toUpperCase))
-                .orElse(model.table(jdbc.schema, tableName.toLowerCase))
-                .map {
-                  table =>
-                    ARLikeTemplateGenerator(table)(GeneratorConfig(
-                      srcDir = srcDir.getAbsolutePath,
-                      testDir = testDir.getAbsolutePath,
-                      packageName = generatorSettings.packageName,
-                      template = GeneratorTemplate(generatorSettings.template),
-                      lineBreak = LineBreak(generatorSettings.lineBreak),
-                      encoding = generatorSettings.encoding
-                    )).writeFileIfNotExist()
-                } getOrElse {
-                  println("The table is not found.")
-                }
+            case _ => generator(args.head, srcDir, testDir).foreach(_.writeFileIfNotExist())
+          }
+      }
+  }
+
+  val echoTask = inputTask {
+    (task: TaskKey[Seq[String]]) =>
+      (task, scalaSource in Compile, scalaSource in Test) map {
+        case (args, srcDir, testDir) =>
+          args match {
+            case Nil => println("Usage: scalikejdbc-gen-echo [table-name]")
+            case _ => generator(args.head, srcDir, testDir).foreach(g => println(g.generateAll()))
           }
       }
   }
 
   val scalikejdbcSettings = inConfig(Compile)(Seq(
-    scalikejdbcGen <<= genTask
+    scalikejdbcGen <<= genTask,
+    scalikejdbcGenEcho <<= echoTask
   ))
 
   def using[R <: { def close() }, A](resource: R)(f: R => A): A = ultimately {
