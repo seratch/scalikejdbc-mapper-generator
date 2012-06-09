@@ -71,9 +71,9 @@ case class Member(
     birthday: Option[LocalDate] = None,
     createdAt: DateTime) {
 
-  def save(): Member = Member.save(this)
+  def save()(implicit session: DBSession = AutoSession): Member = Member.save(this)(session)
 
-  def destroy(): Unit = Member.delete(this)
+  def destroy()(implicit session: DBSession = AutoSession): Unit = Member.delete(this)(session)
 
 }
 
