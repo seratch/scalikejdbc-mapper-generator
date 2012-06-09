@@ -8,9 +8,9 @@ case class WithoutPk(
     bbb: Option[Int] = None,
     createdAt: DateTime) {
 
-  def save(): WithoutPk = WithoutPk.save(this)
+  def save()(implicit session: DBSession = AutoSession): WithoutPk = WithoutPk.save(this)(session)
 
-  def destroy(): Unit = WithoutPk.delete(this)
+  def destroy()(implicit session: DBSession = AutoSession): Unit = WithoutPk.delete(this)(session)
 
 }
 

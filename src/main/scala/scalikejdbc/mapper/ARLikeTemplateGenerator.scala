@@ -221,9 +221,9 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
           c => 1.indent + c.nameInScala + ": " + c.typeInScala + (if (c.isNotNull) "" else " = None")
         }.mkString(", " + eol) + ") { " + eol +
         eol +
-        1.indent + "def save(): " + className + " = " + className + ".save(this)" + eol +
+        1.indent + "def save()(implicit session: DBSession = AutoSession): " + className + " = " + className + ".save(this)(session)" + eol +
         eol +
-        1.indent + "def destroy(): Unit = " + className + ".delete(this)" + eol +
+        1.indent + "def destroy()(implicit session: DBSession = AutoSession): Unit = " + className + ".delete(this)(session)" + eol +
         eol +
         "}"
     } else {
