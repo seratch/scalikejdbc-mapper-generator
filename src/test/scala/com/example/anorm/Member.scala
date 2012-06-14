@@ -4,15 +4,15 @@ import scalikejdbc._
 import org.joda.time.{ LocalDate, DateTime }
 
 case class Member(
-    id: Long,
+    id: Int,
     name: String,
     description: Option[String] = None,
     birthday: Option[LocalDate] = None,
     createdAt: DateTime) {
 
-  def save(): Member = Member.save(this)
+  def save()(implicit session: DBSession = AutoSession): Member = Member.save(this)(session)
 
-  def destroy(): Unit = Member.delete(this)
+  def destroy()(implicit session: DBSession = AutoSession): Unit = Member.delete(this)(session)
 
 }
 
@@ -32,14 +32,14 @@ object Member {
   val * = {
     import columnNames._
     (rs: WrappedResultSet) => Member(
-      id = rs.long(id),
+      id = rs.int(id),
       name = rs.string(name),
       description = Option(rs.string(description)),
       birthday = Option(rs.date(birthday)).map(_.toLocalDate),
       createdAt = rs.timestamp(createdAt).toDateTime)
   }
 
-  def find(id: Long)(implicit session: DBSession = AutoSession): Option[Member] = {
+  def find(id: Int)(implicit session: DBSession = AutoSession): Option[Member] = {
     SQL("""SELECT * FROM MEMBER WHERE ID = {id}""")
       .bindByName('id -> id).map(*).single.apply()
   }
@@ -87,7 +87,7 @@ object Member {
         'createdAt -> createdAt
       ).updateAndReturnGeneratedKey.apply()
     Member(
-      id = generatedKey,
+      id = generatedKey.toInt,
       name = name,
       description = description,
       birthday = birthday,

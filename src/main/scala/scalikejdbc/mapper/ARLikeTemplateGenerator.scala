@@ -372,10 +372,7 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         createColumns.map {
           c => 2.indent + c.nameInScala + ": " + c.typeInScala + (if (c.isNotNull) "" else " = None")
         }.mkString(comma + eol) + ")(implicit session: DBSession = AutoSession): " + className + " = {" + eol +
-        2.indent + (table.autoIncrementColumns.size match {
-          case 0 => ""
-          case _ => "val generatedKey = "
-        }) +
+        2.indent + table.autoIncrementColumns.headOption.map(_ => "val generatedKey = ").getOrElse("") +
         "SQL(\"\"\"" + eol +
         3.indent + "INSERT INTO " + table.name + " (" + eol +
         createColumns.map(c => 4.indent + c.name).mkString(comma + eol) + eol +
@@ -384,15 +381,24 @@ case class ARLikeTemplateGenerator(table: Table)(implicit config: GeneratorConfi
         3.indent + ")" + eol +
         3.indent + "\"\"\")" + eol +
         bindingPart + eol +
-        (table.autoIncrementColumns.size match {
-          case 0 => 3.indent + ").update.apply()"
-          case _ => 3.indent + ").updateAndReturnGeneratedKey.apply()"
-        }) + eol +
+        3.indent +
+        table.autoIncrementColumns.headOption.map(_ => ").updateAndReturnGeneratedKey.apply()").getOrElse(").update.apply()") +
+        eol +
         2.indent + (if (allColumns.size > 22) "new " else "") + className + "(" + eol +
-        (if (table.autoIncrementColumns.size > 0) table.autoIncrementColumns.map {
-          c => 3.indent + c.nameInScala + " = generatedKey, "
-        }.mkString(eol) + eol
-        else "") +
+        table.autoIncrementColumns.headOption.map {
+          c =>
+            3.indent + c.nameInScala +
+              (c.typeInScala match {
+                case TypeName.Byte => " = generatedKey.toByte, "
+                case TypeName.Int => " = generatedKey.toInt, "
+                case TypeName.Short => " = generatedKey.toShort, "
+                case TypeName.Float => " = generatedKey.toFloat, "
+                case TypeName.Double => " = generatedKey.toDouble, "
+                case TypeName.String => " = generatedKey.toString, "
+                case TypeName.BigDecimal => " = BigDecimal.valueOf(generatedKey), "
+                case _ => " = generatedKey, "
+              }) + eol
+        }.getOrElse("") +
         createColumns.map {
           c => 3.indent + c.nameInScala + " = " + c.nameInScala
         }.mkString(comma + eol) + ")" + eol +
