@@ -9,7 +9,7 @@ object MyBuild extends Build {
     sbtPlugin := true,
     organization := "com.github.seratch",
     name := "scalikejdbc-mapper-generator",
-    version := "1.3.0",
+    version := "1.3.1",
     sbtPlugin := true,
     scalaVersion := "2.9.1",
     externalResolvers ~= (_.filter(_.name != "Scala-Tools Maven2 Repository")),
@@ -18,7 +18,7 @@ object MyBuild extends Build {
       "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
     ),
     libraryDependencies ++= Seq(
-      "com.github.seratch" %% "scalikejdbc" % "1.3.0",
+      "com.github.seratch" %% "scalikejdbc" % "1.3.1",
       "ch.qos.logback" % "logback-classic" % "1.0.2",
       "com.h2database" % "h2" % "[1.3,)" % "test",
       "org.scalatest" %% "scalatest" % "[1.7,)" % "test"
